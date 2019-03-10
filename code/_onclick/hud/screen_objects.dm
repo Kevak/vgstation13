@@ -17,8 +17,13 @@
 	plane = HUD_PLANE
 
 /obj/abstract/screen/Destroy()
+	animate(src)
 	master = null
 	..()
+
+/obj/abstract/screen/resetVariables()
+	..("icon","icon_state","name","master", "screen_loc", args)
+	animate(src)
 
 /obj/abstract/screen/text
 	icon = null

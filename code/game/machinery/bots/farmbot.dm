@@ -67,6 +67,11 @@
 		if ( !tank ) //An admin must have spawned the farmbot! Better give it a tank.
 			tank = new /obj/structure/reagent_dispensers/watertank(src)
 
+/obj/machinery/bot/farmbot/Cross(atom/movable/mover, turf/target, height = 1.5, air_group = 0)
+	if (istype(mover,/mob/living/simple_animal/bee))
+		return 1
+	return ..()
+
 /obj/machinery/bot/farmbot/to_bump(M as mob|obj) //Leave no door unopened!
 	spawn(0)
 		if ((istype(M, /obj/machinery/door)) && (!isnull(src.botcard)))
@@ -92,7 +97,7 @@
 
 /obj/machinery/bot/farmbot/proc/get_total_ferts()
 	var total_fert = 0
-	for (var/obj/item/weapon/reagent_containers/glass/fertilizer/fert in contents)
+	for(var/obj/item/weapon/reagent_containers/glass/fert in contents)
 		total_fert++
 	return total_fert
 
@@ -157,7 +162,7 @@
 		setting_ignoreEmpty = !setting_ignoreEmpty
 	else if (href_list["eject"] )
 		flick("[src.icon_initial]_hatch",src)
-		for (var/obj/item/weapon/reagent_containers/glass/fertilizer/fert in contents)
+		for (var/obj/item/weapon/reagent_containers/glass/fert in contents)
 			fert.forceMove(get_turf(src))
 
 	src.updateUsrDialog()
@@ -172,7 +177,7 @@
 		else
 			to_chat(user, "<span class='warning'>Access denied.</span>")
 
-	else if (istype(W, /obj/item/weapon/reagent_containers/glass/fertilizer))
+	else if (istype(W, /obj/item/weapon/reagent_containers/glass))
 		if ( get_total_ferts() >= Max_Fertilizers )
 			to_chat(user, "The fertilizer storage is full!")
 			return
@@ -214,7 +219,7 @@
 	if ( tank )
 		tank.forceMove(Tsec)
 
-	for ( var/obj/item/weapon/reagent_containers/glass/fertilizer/fert in contents )
+	for ( var/obj/item/weapon/reagent_containers/glass/fert in contents )
 		if ( prob(50) )
 			fert.forceMove(Tsec)
 
@@ -274,8 +279,8 @@
 
 	if ( mode == FARMBOT_MODE_FERTILIZE )
 		//Find which fertilizer to use
-		var/obj/item/weapon/reagent_containers/glass/fertilizer/fert
-		for ( var/obj/item/weapon/reagent_containers/glass/fertilizer/nut in contents )
+		var/obj/item/weapon/reagent_containers/glass/fert
+		for ( var/obj/item/weapon/reagent_containers/glass/nut in contents )
 			fert = nut
 			break
 		if ( !fert )
@@ -388,7 +393,7 @@
 		src.frustration++
 
 
-/obj/machinery/bot/farmbot/proc/fertilize(var/obj/item/weapon/reagent_containers/glass/fertilizer/fert)
+/obj/machinery/bot/farmbot/proc/fertilize(var/obj/item/weapon/reagent_containers/glass/fert)
 	if ( !fert )
 		target = null
 		mode = 0

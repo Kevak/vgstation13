@@ -59,6 +59,24 @@
 
 	..()
 
+/datum/command_alert/biohazard_station_unlock
+	name = "Biohazard Level Updated - Lock Down Lifted"
+	alert_title = "Directive 7-10 to 7-12 Concluded."
+	force_report = 1
+
+/datum/command_alert/biohazard_station_unlock/announce()
+	message = "Biohazard outbreak contained succesfully. Quarantine lifted. Please clean up biohazardous material and proceed with standard station duties."
+	..()
+
+
+/datum/command_alert/FUBAR
+	name = "Complimentary escape shuttle sent."
+	alert_title = "Evacuation of remaining assets."
+	force_report = 1
+
+/datum/command_alert/FUBAR/announce()
+	message = "Due to intense sustained damage to the station, Nanotrasen have deemed it fitting to evacuate remaining assets and personnel through an escape shuttle that was previously already en route."
+
 ////////BLOB (mini)
 
 /datum/command_alert/biohazard_level_5
@@ -289,7 +307,7 @@ The access requirements on the Asteroid Shuttles' consoles have now been revoked
 
 /datum/command_alert/blob_storm/overminds/end
 	name = "Meteor Blob Cluster Ended (Overminds!)"
-	message = "The station has cleared the Blob conglomerate. Investigate the hit areas at once and clear the blob. Beware for possible Overmind presence."
+	message = "The station has passed through a Blob conglomerate. Investigate the hit areas at once and clear the blob. Beware for possible Overmind presence."
 
 /////////////GRAVITY
 
@@ -464,8 +482,8 @@ The access requirements on the Asteroid Shuttles' consoles have now been revoked
 
 /datum/command_alert/immovable_rod
 	name = "Immovable Rod (\"What The Fuck Was That?\")"
-	alert_title = "General Alert"
-	message = "What the fuck was that?!"
+	alert_title = "Local Bluespace Sensor Report"
+	message = "Alert: The station appears to be on a collision course with an anomalous object perfectly suspended in space. Heavy structural damage may result."
 
 /datum/command_alert/rogue_drone
 	name = "Rogue Drones - Alert"

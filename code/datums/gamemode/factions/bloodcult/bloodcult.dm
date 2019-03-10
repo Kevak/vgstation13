@@ -45,6 +45,8 @@ var/veil_thickness = CULT_PROLOGUE
 		new /obj/structure/cult/bloodstone(T)
 
 	//Cultists can use those bloodstones to locate the rest of them, they work just like station holomaps
+
+	/* --moved to bloodstone/New()
 	var/i = 1
 	for(var/obj/structure/cult/bloodstone/B in bloodstone_list)
 		var/datum/holomap_marker/newMarker = new()
@@ -53,13 +55,18 @@ var/veil_thickness = CULT_PROLOGUE
 		newMarker.x = B.x
 		newMarker.y = B.y
 		newMarker.z = B.z
-		holomap_markers[HOLOMAP_MARKER_BLOODSTONE+"_[i]"] = newMarker
+		holomap_markers[HOLOMAP_MARKER_BLOODSTONE+"_\ref[src]"] = newMarker
 		i++
+	*/
 
+	/*	--moved to code\modules\html_interface\map\station_map.dm
 	var/icon/canvas = icon('icons/480x480.dmi', "cultmap")
 	var/icon/map_base = icon(holoMiniMaps[map.zMainStation])
 	map_base.Blend("#E30000",ICON_MULTIPLY)
 	canvas.Blend(map_base,ICON_OVERLAY)
+	*/
+
+	/*	--the markers now instead get added as overlays every time the map is show to the players
 	for(var/marker in holomap_markers)
 		var/datum/holomap_marker/holomarker = holomap_markers[marker]
 		if(holomarker.z == map.zMainStation && holomarker.filter & HOLOMAP_FILTER_CULT)
@@ -67,17 +74,35 @@ var/veil_thickness = CULT_PROLOGUE
 				canvas.Blend(icon(holomarker.icon,holomarker.id), ICON_OVERLAY, holomarker.x-8+map.holomap_offset_x[map.zMainStation]	, holomarker.y-8+map.holomap_offset_y[map.zMainStation])
 			else
 				canvas.Blend(icon(holomarker.icon,holomarker.id), ICON_OVERLAY, holomarker.x-8, holomarker.y-8)
+	*/
 
+	/*	--moved to code\modules\html_interface\map\station_map.dm
 	extraMiniMaps |= HOLOMAP_EXTRA_CULTMAP
 	extraMiniMaps[HOLOMAP_EXTRA_CULTMAP] = canvas
+	*/
 
 	for(var/obj/structure/cult/bloodstone/B in bloodstone_list)
-		if (B.loc)
-			B.holomap_datum = new /datum/station_holomap/cult()
-			B.holomap_datum.initialize_holomap(B.loc)
-		else
+		if (!B.loc)
 			qdel(B)
 			message_admins("Blood Cult: A blood stone was somehow spawned in nullspace. It has been destroyed.")
+			log_admin("Blood Cult: A blood stone was somehow spawned in nullspace. It has been destroyed.")
+
+/proc/prepare_cult_holomap()
+	var/image/I = image(extraMiniMaps[HOLOMAP_EXTRA_CULTMAP])
+	for(var/marker in holomap_markers)
+		var/datum/holomap_marker/holomarker = holomap_markers[marker]
+		var/image/markerImage = image(holomarker.icon,holomarker.id)
+		markerImage.color = holomarker.color
+		if(holomarker.z == map.zMainStation && holomarker.filter & HOLOMAP_FILTER_CULT)
+			if(map.holomap_offset_x.len >= map.zMainStation)
+				markerImage.pixel_x = holomarker.x-8+map.holomap_offset_x[map.zMainStation]
+				markerImage.pixel_y = holomarker.y-8+map.holomap_offset_y[map.zMainStation]
+			else
+				markerImage.pixel_x = holomarker.x-8
+				markerImage.pixel_y = holomarker.y-8
+			markerImage.appearance_flags = RESET_COLOR
+			I.overlays += markerImage
+	return I
 
 /proc/cult_risk(var/mob/M)//too many conversions/soul-stoning might bring the cult to the attention of Nanotrasen prematurely
 	var/datum/faction/bloodcult/cult = find_active_faction_by_type(/datum/faction/bloodcult)
@@ -91,6 +116,8 @@ var/veil_thickness = CULT_PROLOGUE
 	var/living_cultists = 0
 	var/living_noncultists = 0
 	for (var/mob/living/L in player_list)
+		if (issilicon(L)||isborer(L))
+			continue
 		if (L.stat != DEAD)
 			if (iscultist(L))
 				living_cultists++
@@ -102,13 +129,15 @@ var/veil_thickness = CULT_PROLOGUE
 
 	if (risk > 0)
 		if(prob(risk))
-			message_admins("With a chance of [risk]%, the cult's activities have been prematurely exposed.")
+			message_admins("With a chance of [risk]% ([living_cultists] Cultists vs [living_noncultists] non-cultists), the cult's activities have been prematurely exposed.")
+			log_admin("With a chance of [risk]% ([living_cultists] Cultists vs [living_noncultists] non-cultists), the cult's activities have been prematurely exposed.")
 			cult.warning = TRUE
 			command_alert(/datum/command_alert/cult_detected)
 		else
-			message_admins("With a chance of [risk]%, the cult's activities have avoided raising suspicion for now...")
+			message_admins("With a chance of [risk]% ([living_cultists] Cultists vs [living_noncultists] non-cultists), the cult's activities have avoided raising suspicion for now...")
+			log_admin("With a chance of [risk]% ([living_cultists] Cultists vs [living_noncultists] non-cultists), the cult's activities have avoided raising suspicion for now...")
 			if (M)
-				to_chat(M,"<span class='warning'>Be mindful, overzealous conversions and soul trapping will bring attention to us unwanted attention. You should focus on the objective with your current force.</span>")
+				to_chat(M,"<span class='warning'>Be mindful, overzealous conversions and soul trapping will bring us unwanted attention. You should focus on the objective with your current force.</span>")
 
 
 //CULT_PROLOGUE		Default thickness, only communication and raise structure runes enabled
@@ -131,8 +160,8 @@ var/veil_thickness = CULT_PROLOGUE
 	logo_state = "cult-logo"
 	hud_icons = list("cult-logo")
 	var/list/bloody_floors = list()
-	var/target_change = FALSE
-	var/change_cooldown = 0
+	//var/target_change = FALSE
+	//var/change_cooldown = 0
 	var/cult_win = FALSE
 	var/warning = FALSE
 
@@ -140,7 +169,7 @@ var/veil_thickness = CULT_PROLOGUE
 	return cult_win
 
 /datum/faction/bloodcult/proc/fail()
-	if (cult_win || veil_thickness == CULT_MENDED)
+	if (veil_thickness == CULT_MENDED || veil_thickness == CULT_EPILOGUE)
 		return
 	progress(CULT_MENDED)
 
@@ -157,7 +186,7 @@ var/veil_thickness = CULT_PROLOGUE
                     "")
 		for (var/datum/role/R in members)
 			var/mob/M = R.antag.current
-			if (M)
+			if (M && R.antag.GetRole(CULTIST))//failsafe for cultist brains put in MMIs
 				to_chat(M, "<span class='danger'>Nar-Sie</span> murmurs... <span class='sinister'>[message]</span>")
 
 		for(var/mob/dead/observer/O in player_list)
@@ -174,8 +203,10 @@ var/veil_thickness = CULT_PROLOGUE
 	initialize_cultwords()
 	AppendObjective(/datum/objective/bloodcult_reunion)
 
+/*
 /datum/faction/bloodcult/process()
 	..()
+
 	if (change_cooldown > 0)
 		change_cooldown -= 1 SECONDS
 		if (change_cooldown <= 0)
@@ -193,7 +224,9 @@ var/veil_thickness = CULT_PROLOGUE
 								else if (iscultist(O.sacrifice_target))
 									to_chat(M,"<b>Chance has rolled its dice, and one of ours was selected. If for whatever reasons you do not want to take their life, you will have to wait for a new selection.</b>")
 	if (target_change)
+		target_change = FALSE
 		change_cooldown = SACRIFICE_CHANGE_COOLDOWN
+*/
 
 /datum/faction/bloodcult/proc/progress(var/new_act,var/A)
 	//This proc is called to update the faction's current objectives, and veil thickness
@@ -270,22 +303,29 @@ var/veil_thickness = CULT_PROLOGUE
 		AppendObjective(new_obj)
 		for(var/datum/role/cultist/C in members)
 			var/mob/M = C.antag.current
-			if (M)
+			if (M && iscultist(M))
 				to_chat(M,"<span class='danger'>[new_obj.name]</span><b>: [new_obj.explanation_text]</b>")
+				//ACT 1
+				if (istype(new_obj,/datum/objective/bloodcult_followers))
+					to_chat(M,"<b>As our ritual progresses through its Acts, the veil gets thinner, and dormant runes awaken. Summon a tome (<span class='danger'>See Blood Hell</span>) to see the available runes and learn their uses.</b>")
+				//ACT 2
 				if (istype(new_obj,/datum/objective/bloodcult_sacrifice))
 					var/datum/objective/bloodcult_sacrifice/O = new_obj
-					if (M == O.sacrifice_target)
-						to_chat(M,"<b>There is no greater honor than purposefuly relinquishing your body for the coming of Nar-Sie, but you may wait for another target to be selected should you be afraid of death.</b>")
-					else if (iscultist(O.sacrifice_target))
-						to_chat(M,"<b>Chance has rolled its dice, and one of ours was selected. If for whatever reasons you do not want to take their life, you will have to wait for a new selection.</b>")
+					if (O.sacrifice_target)
+						if (M == O.sacrifice_target)
+							to_chat(M,"<b>There is no greater honor than purposefuly relinquishing your body for the coming of Nar-Sie.</b>")
+						to_chat(M,"<b>Should the target's body be annihilated, or should they flee the station, you may commune with Nar-Sie at an altar to have him designate a new target.</b>")
+					else
+						to_chat(M,"<b>There are no elligible targets aboard the station, how did you guys even manage that one?</b>")//if there's literally no humans aboard the station
+						to_chat(M,"<b>Commune with Nar-Sie at an altar to have him designate a new target.</b>")
 
 		for (var/datum/role/cultist/C in members)
 			C.update_cult_hud()
 
-		for (var/obj/structure/cult/spire/S in cult_spires)
+		for (var/obj/structure/cult/spire/S in cult_spires)//spires update their appearance on Act 2 and 3, signaling new available tattoos.
 			S.upgrade()
 
-		for (var/obj/effect/rune/R in rune_list)
+		for (var/obj/effect/rune/R in rune_list)//runes now available will start pulsing
 			R.update_icon()
 
 		if (istype(new_obj,/datum/objective/bloodcult_bloodbath))

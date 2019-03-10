@@ -721,7 +721,7 @@
 	if(!ishigherbeing(user))
 		to_chat(user, "<span class = 'warning'>You don't know how to use this!</span>")
 		return
-	if(issilent(user))
+	if(issilent(user) || user.is_mute())
 		to_chat(user, "<span class = 'warning'>You find yourself unable to speak at all.</span>")
 		return
 	if(spamcheck)
@@ -1106,6 +1106,21 @@
 	name = "fingerbox"
 	desc = "A high quality fingerbox."
 	icon_state = "fingerbox"
+	
+/obj/item/toy/gasha/bangerboy
+	name = "toy Bangerboy"
+	icon_state = "bangerboy"
+	desc = "<B>BANG</B>"
+	
+/obj/item/toy/gasha/femsec
+	name = "toy femsec"
+	icon_state = "femsec"
+	desc = "bodybag accessory not included"
+	
+/obj/item/toy/gasha/hoptard
+	name = "toy HoPtard"
+	icon_state = "hoptard"
+	desc = "uhhhhhhhh"
 
 	//I couldn't think of anywhere else to put this
 /obj/item/toy/canary
@@ -1761,3 +1776,4 @@ var/list/living_balloons = list()
 	name = "\improper Trader action figure"
 	icon_state = "trader"
 	toysay = "Shiny rock for nuke, good trade yes?"
+	

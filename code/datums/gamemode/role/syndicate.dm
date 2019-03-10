@@ -1,15 +1,17 @@
 /datum/role/traitor
 	name = TRAITOR
 	id = TRAITOR
-	required_pref = ROLE_TRAITOR
+	required_pref = TRAITOR
 	logo_state = "synd-logo"
-	wikiroute = ROLE_TRAITOR
-
+	wikiroute = TRAITOR
+	refund_value = BASE_SOLO_REFUND
+	var/can_be_smooth = TRUE //Survivors can't be smooth because they get nothing.
 
 /datum/role/traitor/OnPostSetup()
 	..()
 	share_syndicate_codephrase(antag.current)
 	if(istype(antag.current, /mob/living/silicon))
+		can_be_smooth = FALSE //Can't buy anything
 		add_law_zero(antag.current)
 		antag.current << sound('sound/voice/AISyndiHack.ogg')
 	else
@@ -17,11 +19,20 @@
 		antag.current << sound('sound/voice/syndicate_intro.ogg')
 
 /datum/role/traitor/Drop()
-	if(isrobot(antag.current) || isAI(antag.current))
+	if(isrobot(antag.current))
 		var/mob/living/silicon/robot/S = antag.current
 		to_chat(S, "<b>Your laws have been changed!</b>")
-		S.set_zeroth_law("","")
+		S.set_zeroth_law("")
+		S.laws.zeroth_lock = FALSE
 		to_chat(S, "Law 0 has been purged.")
+	else if(isAI(antag.current))
+		var/mob/living/silicon/ai/KAI = antag.current
+		to_chat(KAI, "<b>Your laws have been changed!</b>")
+		KAI.set_zeroth_law("","")
+		KAI.laws.zeroth_lock = FALSE
+		KAI.notify_slaved()
+	else if(ishuman(antag.current))
+		antag.take_uplink()
 
 	.=..()
 
@@ -107,33 +118,16 @@
 
 	to_chat(antag.current, "<span class='info'><a HREF='?src=\ref[antag.current];getwiki=[wikiroute]'>(Wiki Guide)</a></span>")
 
-//_______________________________________________
+/datum/role/traitor/GetScoreboard()
+	. = ..()
+	if(can_be_smooth)
+		if(uplink_items_bought)
+			. += "The traitor bought:<BR>"
+			for(var/entry in uplink_items_bought)
+				. += "[entry]<BR>"
+		else
+			. += "The traitor was a smooth operator this round.<BR>"
 
-/*
- * Summon guns and sword traitors
- */
-
-/datum/role/traitor/survivor
-	id = SURVIVOR
-	name = SURVIVOR
-	logo_state = "gun-logo"
-	var/survivor_type = "survivor"
-
-/datum/role/traitor/survivor/crusader
-	id = CRUSADER
-	name = CRUSADER
-	survivor_type = "crusader"
-	logo_state = "sword-logo"
-
-/datum/role/traitor/survivor/Greet()
-	to_chat(antag.current, "<B>You are a [survivor_type]! Your own safety matters above all else, trust no one and kill anyone who gets in your way. However, armed as you are, now would be the perfect time to settle that score or grab that pair of yellow gloves you've been eyeing...</B>")
-
-/datum/role/traitor/survivor/ForgeObjectives()
-	var/datum/objective/survive/S = new
-	AppendObjective(S)
-
-/datum/role/traitor/survivor/OnPostSetup()
-	return TRUE
 //________________________________________________
 
 
@@ -141,6 +135,7 @@
 	name = ROGUE
 	id = ROGUE
 	logo_state = "synd-logo"
+	refund_value = BASE_SOLO_REFUND/2
 
 /datum/role/traitor/rogue/ForgeObjectives()
 	var/datum/role/traitor/rogue/rival
@@ -197,6 +192,7 @@
 /datum/role/nuclear_operative
 	name = NUKE_OP
 	id = NUKE_OP
+	required_pref = NUKE_OP
 	disallow_job = TRUE
 	logo_state = "nuke-logo"
 

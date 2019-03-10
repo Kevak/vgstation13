@@ -662,7 +662,7 @@ obj/structure/bomberflame/Destroy()
 	name = "Bomberman's suit"
 	desc = "Doesn't actually make you immune to bombs!"
 	icon_state = "bomberman"
-	item_state = "bomberman"
+	item_state = "bomberman_suit"
 	slowdown = NO_SLOWDOWN
 	armor = list(melee = 0, bullet = 0, laser = 0,energy = 0, bomb = 100, bio = 0, rad = 0)
 	siemens_coefficient = 0
@@ -691,7 +691,7 @@ obj/structure/bomberflame/Destroy()
 	name = "Bomberman head"
 	desc = "Terrorism has never looked so adorable."
 	icon_state = "bomberman"
-	item_state = "bomberman"
+	item_state = "bomberman_helmet"
 	armor = list(melee = 0, bullet = 0, laser = 0,energy = 0, bomb = 100, bio = 0, rad = 0)
 	siemens_coefficient = 0
 	species_restricted = list("exclude")
@@ -1089,7 +1089,7 @@ var/global/list/arena_spawnpoints = list()//used by /mob/dead/observer/Logout()
 		flick("entertainment_arena",E)
 
 	for(var/mob/dead/observer/O in observers)
-		to_chat(O, "<b>A round has begun in <A HREF='?src=\ref[O];jumptoarenacood=1;X=[center.x];Y=[center.y];Z=[center.z]'>[name]</A>!</b>")
+		to_chat(O, "<b>A round has begun in <A HREF='?src=\ref[O];jumptoarenacood=1;targetarena=\ref[src]'>[name]</A>!</b>")
 
 	sleep(40)
 

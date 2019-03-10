@@ -99,6 +99,7 @@ var/global/list/animal_count = list() //Stores types, and amount of animals of t
 
 	var/life_tick = 0
 	var/list/colourmatrix = list()
+	var/colour //Used for retaining color in breeding.
 
 	var/is_pet = FALSE //We're somebody's precious, precious pet.
 
@@ -324,7 +325,7 @@ var/global/list/animal_count = list() //Stores types, and amount of animals of t
 			return "[emote], [text]"
 	return "says, [text]";
 
-/mob/living/simple_animal/emote(var/act, var/type, var/desc, var/auto)
+/mob/living/simple_animal/emote(var/act, var/type, var/desc, var/auto, var/message = null)
 	if(timestopped)
 		return //under effects of time magick
 	if(stat)
@@ -487,7 +488,7 @@ var/global/list/animal_count = list() //Stores types, and amount of animals of t
 				return 1
 	else if (user.is_pacified(VIOLENCE_DEFAULT,src))
 		return
-	if(supernatural && istype(O,/obj/item/weapon/nullrod))
+	if(supernatural && isholyweapon(O))
 		purge = 3
 	..()
 
@@ -512,7 +513,7 @@ var/global/list/animal_count = list() //Stores types, and amount of animals of t
 		return
 
 	if(!gibbed)
-		emote("deathgasp")
+		emote("deathgasp", message = TRUE)
 
 	health = 0 // so /mob/living/simple_animal/Life() doesn't magically revive them
 	living_mob_list -= src
@@ -670,6 +671,9 @@ var/global/list/animal_count = list() //Stores types, and amount of animals of t
 		var/mob/living/simple_animal/child = new childtype(loc)
 		if(istype(child))
 			child.inherit_mind(src)
+		if(colour)
+			child.colour = colour
+			child.update_icon()
 
 	return 1
 
@@ -693,6 +697,10 @@ var/global/list/animal_count = list() //Stores types, and amount of animals of t
 	new_animal.inherit_mind(src)
 	new_animal.ckey = src.ckey
 	new_animal.key = src.key
+
+	if(colour)
+		new_animal.colour = colour
+		new_animal.update_icon()
 
 	forceMove(get_turf(src))
 	qdel(src)

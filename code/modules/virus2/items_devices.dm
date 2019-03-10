@@ -37,7 +37,8 @@
 
 /obj/item/weapon/virusdish/random/New(loc)
 	..(loc)
-	virus2 = new /datum/disease2/disease
+	var/virus_choice = pick(typesof(/datum/disease2/disease))
+	virus2 = new virus_choice
 	virus2.makerandom()
 	growth = rand(5, 50)
 
@@ -71,13 +72,19 @@
 
 ///////////////GNA DISK///////////////
 
-/obj/item/weapon/diseasedisk
+/obj/item/weapon/disk/disease
 	name = "blank GNA disk"
-	icon = 'icons/obj/cloning.dmi'
-	icon_state = "datadisk0"
+	desc = "A disk for storing the structure of a pathogen's Glycol Nucleic Acid pertaining to a specific symptom."
+	icon = 'icons/obj/datadisks.dmi'
+	icon_state = "disk_virus"
 	var/datum/disease2/effect/effect = null
 	var/stage = 1
 
-/obj/item/weapon/diseasedisk/premade/New()
+/obj/item/weapon/disk/disease/premade/New()
 	name = "blank GNA disk (stage: [stage])"
 	effect = new /datum/disease2/effect
+
+/obj/item/weapon/disk/disease/zombie
+	name = "\improper Stubborn Brain Syndrome (Stage 4)"
+	effect = new /datum/disease2/effect/zombie
+	stage = 4

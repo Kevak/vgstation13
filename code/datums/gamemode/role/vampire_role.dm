@@ -5,12 +5,14 @@
 /datum/role/vampire
 	id = VAMPIRE
 	name = VAMPIRE
-	special_role = ROLE_VAMPIRE
+	special_role = VAMPIRE
 	disallow_job = FALSE
 	restricted_jobs = list("AI", "Cyborg", "Mobile MMI", "Security Officer", "Warden", "Detective", "Head of Security", "Captain", "Chaplain")
 	logo_state = "vampire-logo"
 	greets = list(GREET_DEFAULT,GREET_CUSTOM,GREET_ADMINTOGGLE, GREET_MASTER)
-	required_pref = ROLE_VAMPIRE
+	required_pref = VAMPIRE
+	protected_traitor_prob = PROB_PROTECTED_RARE
+	refund_value = BASE_SOLO_REFUND
 
 	var/list/powers = list()
 	var/ismenacing = FALSE
@@ -35,7 +37,7 @@
 	else if (istype(fac, /datum/faction/vampire))
 		vamp_fac = fac
 		vamp_fac.addMaster(src)
-	wikiroute = role_wiki[ROLE_VAMPIRE]
+	wikiroute = role_wiki[VAMPIRE]
 
 /datum/role/vampire/Greet(var/greeting,var/custom)
 	if(!greeting)
@@ -80,8 +82,12 @@
 /datum/role/vampire/AdminPanelEntry(var/show_logo = FALSE,var/datum/admins/A)
 	var/icon/logo = icon('icons/logos.dmi', logo_state)
 	var/mob/M = antag.current
-	var/text = {"[show_logo ? "<img src='data:image/png;base64,[icon2base64(logo)]' style='position: relative; top: 10;'/> " : "" ]
-[name] <a href='?_src_=holder;adminplayeropts=\ref[M]'>[M.real_name]/[M.key]</a>[M.client ? "" : " <i> - (logged out)</i>"][M.stat == DEAD ? " <b><font color=red> - (DEAD)</font></b>" : ""]
+	var/text
+	if (!M) // Body destroyed
+		text = "[antag.name]/[antag.key] (BODY DESTROYED)"
+	else
+		text = {"[show_logo ? "<img src='data:image/png;base64,[icon2base64(logo)]' style='position: relative; top: 10;'/> " : "" ]
+[name] <a href='?_src_=holder;adminplayeropts=\ref[M]'>[key_name(M)]</a>[M.client ? "" : " <i> - (logged out)</i>"][M.stat == DEAD ? " <b><font color=red> - (DEAD)</font></b>" : ""]
  - <a href='?src=\ref[usr];priv_msg=\ref[M]'>(priv msg)</a>
  - <a href='?_src_=holder;traitor=\ref[M]'>(role panel)</a> - <a href='?src=\ref[src]&mind=\ref[antag]&giveblood=1'>Give blood</a>"}
 	return text
@@ -234,6 +240,7 @@
 */
 
 /datum/role/vampire/process()
+	..()
 	var/mob/living/carbon/human/H = antag.current
 	if (!istype(H))
 		return FALSE // The life() procs only work on humans.
@@ -260,6 +267,8 @@
 
 /datum/role/vampire/proc/handle_cloak(var/mob/living/carbon/human/H)
 	var/turf/T = get_turf(H)
+	if(H.stat != DEAD)
+		iscloaking = FALSE
 	if(!iscloaking)
 		H.alphas["vampire_cloak"] = 255
 		H.color = "#FFFFFF"
@@ -277,8 +286,9 @@
 			H.alphas["vampire_cloak"] = round((255 * 0.80))
 
 /datum/role/vampire/proc/handle_menace(var/mob/living/carbon/human/H)
+	if(H.stat != DEAD)
+		ismenacing = FALSE
 	if(!ismenacing)
-		ismenacing = 0 // ? Probably not necessary
 		return FALSE
 
 	var/turf/T = get_turf(H)
@@ -387,8 +397,8 @@
 		check_vampire_upgrade()
 
 /datum/role/vampire/handle_reagent(var/reagent_id)
-	switch (reagent_id)
-		if (HOLYWATER)
+	switch(reagent_id)
+		if (HOLYWATER,INCENSE_HAREBELLS)
 			var/mob/living/carbon/human/H = antag.current
 			if (!istype(H))
 				return
@@ -497,7 +507,7 @@
 					to_chat(src, "<span class='danger'>You continue to burn!</span>")
 				fire_stacks += 5
 				IgniteMob()
-		emote("scream",,, 1)
+		audible_scream()
 	else
 		switch(health)
 			if((-INFINITY) to 60)
@@ -524,6 +534,8 @@
 	if(!istype(master))
 		return FALSE
 	src.master = master
+	message_admins("[key_name(M)] was enthralled by [key_name(master.antag)]. [formatJumpTo(get_turf(M.current))]")
+	log_admin("[key_name(M)] was enthralled by [key_name(master.antag)]. [formatJumpTo(get_turf(M.current))]")
 	update_faction_icons()
 	Greet(TRUE)
 	ForgeObjectives()
@@ -546,6 +558,8 @@
 
 /datum/role/thrall/Drop(var/deconverted = FALSE)
 	var/mob/M = antag.current
+	message_admins("[key_name(M)] was dethralled, his master was [key_name(master.antag)]. [formatJumpTo(get_turf(antag.current))]")
+	log_admin("[key_name(M)] was dethralled, his master was [key_name(master.antag)]. [formatJumpTo(get_turf(antag.current))]")
 	if (deconverted)
 		M.visible_message("<span class='big danger'>[M] suddenly becomes calm and collected again, \his eyes clear up.</span>",
 		"<span class='big notice'>Your blood cools down and you are inhabited by a sensation of untold calmness.</span>")
@@ -559,4 +573,4 @@
 			if (!istype(H))
 				return
 			if (prob(35)) // 35% chance of dethralling
-				Drop()
+				Drop(TRUE)

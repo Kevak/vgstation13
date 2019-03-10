@@ -177,6 +177,10 @@
 	name = "distinguished conduct medal"
 	desc = "A bronze medal awarded for distinguished conduct. Whilst a great honor, this is most basic award given by Nanotrasen. It is often awarded by a captain to a member of his crew."
 
+/obj/item/clothing/accessory/medal/participation
+	name = "super participation medal"
+	desc = "On closer inspection, this one is dated 2551..."
+
 /obj/item/clothing/accessory/medal/bronze_heart
 	name = "bronze heart medal"
 	desc = "A bronze heart-shaped medal awarded for sacrifice. It is often awarded posthumously or for severe injury in the line of duty."
@@ -370,3 +374,31 @@
 	else
 		icon_state = "patch_0"
 	..()
+
+/obj/item/clothing/accessory/rabbit_foot
+	name = "rabbit's foot"
+	desc = "The hind left foot from a rabbit. It makes you feel lucky."
+	icon_state = "rabbit_foot"
+	_color = "rabbit_foot"
+	var/thisvarmakesyoulucky = TRUE //Note: Luck is a mental construct and doesn't actually exist.
+	var/wired = FALSE
+
+/obj/item/clothing/accessory/rabbit_foot/attackby(obj/item/I, mob/user)
+	..()
+	if(iscablecoil(I))
+		var/obj/item/stack/cable_coil/C = I
+		if(wired)
+			to_chat(user, "<span class='info'>\The [src] already has a loop on it.</span>")
+			//break
+		else if(C.use(5))
+			wired = TRUE
+			overlays += image("icon" = 'icons/obj/clothing/accessories.dmi', "icon_state" = "rabbit_foot_loop")
+			to_chat(user, "<span class='info'>You add a loop to \the [src].</span>")
+		else
+			to_chat(user, "<span class='info'>You need at least 5 lengths of cable to add a loop to this.</span>")
+
+/obj/item/clothing/accessory/rabbit_foot/can_attach_to(obj/item/clothing/C)
+	if(wired)
+		return istype(C, /obj/item/clothing/under)
+	else
+		return FALSE

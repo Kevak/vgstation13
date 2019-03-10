@@ -193,7 +193,7 @@
 		item_state = "cutters_yellow"
 
 /obj/item/weapon/wirecutters/attack(mob/living/carbon/C as mob, mob/user as mob)
-	if((iscarbon(C)) && (C.handcuffed) && (istype(C.handcuffed, /obj/item/weapon/handcuffs/cable)))
+	if((iscarbon(C)) && (C.handcuffed) && (istype(C.handcuffed, /obj/item/weapon/handcuffs/cable)) && user.a_intent!=I_HURT)
 		usr.visible_message("\The [user] cuts \the [C]'s [C.handcuffed.name] with \the [src]!",\
 		"You cut \the [C]'s [C.handcuffed.name] with \the [src]!",\
 		"You hear cable being cut.")
@@ -480,7 +480,8 @@
 /obj/item/weapon/weldingtool/proc/eyecheck(mob/user as mob)
 	if(!iscarbon(user))
 		return 1
-	var/safety = user:eyecheck()
+	var/mob/living/carbon/C = user //eyecheck is living-level
+	var/safety = C.eyecheck()
 	if(istype(user, /mob/living/carbon/human))
 		var/mob/living/carbon/human/H = user
 		var/datum/organ/internal/eyes/E = H.internal_organs_by_name["eyes"]
@@ -489,7 +490,7 @@
 		if(E.welding_proof)
 			user.simple_message("<span class='notice'>Your eyelenses darken to accommodate for the welder's glow.</span>")
 			return
-		if(safety < 2 && eye_damaging)
+		if(safety < 2 && eye_damaging && !(user.sdisabilities & BLIND))
 			switch(safety)
 				if(1)
 					user.simple_message("<span class='warning'>Your eyes sting a little.</span>",\

@@ -494,7 +494,7 @@
 		if(!sec_record)
 			to_chat(usr, "<span class='warning'>Unable to locate a data core entry for this person.</span>")
 			return
-		var/setcriminal = input(usr, "Specify a new criminal status for this person.", "Security HUD", sec_record.fields["criminal"]) as null|anything in list("None", "*Arrest*", "Incarcerated", "Parolled", "Released")
+		var/setcriminal = input(usr, "Specify a new criminal status for this person.", "Security HUD", sec_record.fields["criminal"]) as null|anything in list("None", "*High Threat*", "*Arrest*", "Incarcerated", "Parolled", "Released")
 		if(!setcriminal || (usr.incapacitated() && !isAdminGhost(usr)) || !usr.hasHUD(HUD_SECURITY))
 			return
 		sec_record.fields["criminal"] = setcriminal
@@ -587,9 +587,6 @@
 		if (!t1 || (usr.incapacitated() && !isAdminGhost(usr)) || !usr.hasHUD(HUD_MEDICAL))
 			return
 		med_record.add_comment(t1)
-	else if (href_list["lookitem"])
-		var/obj/item/I = locate(href_list["lookitem"])
-		usr.examination(I)
 	else if (href_list["listitems"])
 		var/mob/M = usr
 		if(istype(M, /mob/dead) || (!M.isUnconscious() && !M.eye_blind && !M.blinded))
@@ -1326,6 +1323,8 @@
 		var/datum/data/record/R = find_record("name", perpname, data_core.security)
 		if(R && R.fields["criminal"])
 			switch(R.fields["criminal"])
+				if("*High Threat*")
+					threatcount += 10
 				if("*Arrest*")
 					threatcount += 5
 				if("Incarcerated")
@@ -1432,16 +1431,16 @@
 
 // Makes all robotic limbs organic.
 /mob/living/carbon/human/proc/make_robot_limbs_organic()
-	for(var/datum/organ/external/O in src.organs)
+	for(var/datum/organ/external/O in organs)
 		if(O.is_robotic())
-			O.status &= ~ORGAN_ROBOT
+			O.fleshify()
 	update_icons()
+	update_body()
 
 // Makes all robot internal organs organic.
 /mob/living/carbon/human/proc/make_robot_internals_organic()
-	for(var/datum/organ/internal/O in src.organs)
-		if(O.robotic)
-			O.robotic = 0
+	for(var/datum/organ/internal/O in internal_organs)
+		O.robotic = 0
 
 // Makes all robot organs, internal and external, organic.
 /mob/living/carbon/human/proc/make_all_robot_parts_organic()
@@ -1451,13 +1450,15 @@
 // Makes all limbs robotic.
 /mob/living/carbon/human/proc/make_organic_limbs_robotic()
 	for(var/datum/organ/external/O in organs)
-		O.robotize()
+		if(!O.is_robotic())
+			O.robotize()
 	update_icons()
+	update_body()
 
 // Makes all internal organs robotic.
 /mob/living/carbon/human/proc/make_organic_internals_robotic()
-	for(var/datum/organ/internal/O in organs)
-		O.robotic = TRUE
+	for(var/datum/organ/internal/O in internal_organs)
+		O.robotic = 2
 
 // Makes all organs, internal and external, robotic.
 /mob/living/carbon/human/proc/make_all_organic_parts_robotic()
@@ -1753,6 +1754,7 @@ mob/living/carbon/human/isincrit()
 		"meatleft",
 		"check_mutations",
 		"lastFart",
+		"lastDab",
 		"last_shush",
 		"last_emote_sound",
 		"decapitated",
@@ -1854,3 +1856,38 @@ mob/living/carbon/human/isincrit()
 	var/datum/organ/internal/heart/cell/C = get_heart()
 	if(istype(C))
 		return C.cell
+
+// Returns null on failure, the butt on success.
+/mob/living/carbon/human/proc/remove_butt(var/where = loc)
+	if(op_stage.butt == SURGERY_NO_BUTT)
+		return
+	var/obj/item/clothing/head/butt/donkey = new(where)
+	donkey.transfer_buttdentity(src)
+	op_stage.butt = SURGERY_NO_BUTT
+	return donkey
+
+/mob/living/carbon/human/attempt_crawling(var/turf/target)
+	if(!lying)
+		return FALSE
+	if(!isfloor(target) || !isfloor(get_turf(src)) || !Adjacent(target))
+		return FALSE
+	if(isUnconscious() || stunned || paralysis || !check_crawl_ability() || pulledby || locked_to || client.move_delayer.blocked() || status_flags & FAKEDEATH)
+		return FALSE
+	var/crawldelay = round(1 + base_movement_tally()/5) * 1 SECONDS
+	. = Move(target, get_dir(src, target), glide_size_override = crawldelay)
+	delayNextMove(crawldelay, additive=1)
+
+/mob/living/carbon/human/Hear(var/datum/speech/speech, var/rendered_speech="")
+	..()
+	if(!mind.faith || speech.frequency || speech.speaker == src || !ishuman(speech.speaker) || length(speech.message) < 20)
+		return
+	if(dizziness || stuttering || jitteriness || hallucination || confused || drowsyness || pain_shock_stage)
+		var/mob/living/carbon/human/H = speech.speaker
+		if(H.mind == mind.faith.religiousLeader)
+			AdjustDizzy(rand(-8,-10))
+			stuttering = max(0,stuttering-rand(8,10))
+			jitteriness = max(0,jitteriness-rand(8,10))
+			hallucination = max(0,hallucination-rand(8,10))
+			confused = max(0,confused-rand(8,10))
+			drowsyness = max(0, drowsyness-rand(8,10))
+			pain_shock_stage = max(0, pain_shock_stage-rand(3,5))

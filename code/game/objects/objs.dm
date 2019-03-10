@@ -271,7 +271,7 @@ var/global/list/reagents_to_log = list(FUEL, PLASMA, PACID, SACID, AMUTATIONTOXI
 					continue
 
 				// AIs/Robots can do shit from afar.
-				if (isAI(M) || isrobot(M))
+				if (isAI(M) || isrobot(M) || isAdminGhost(M))
 					is_in_use = 1
 					src.attack_ai(M)
 
@@ -567,7 +567,7 @@ a {
 
 /obj/proc/clumsy_check(var/mob/living/user)
 	if(istype(user))
-		return (M_CLUMSY in user.mutations)
+		return (M_CLUMSY in user.mutations) || user.reagents.has_reagent(INCENSE_BANANA)
 	return 0
 
 //Proc that handles NPCs (gremlins) "tampering" with this object.
@@ -634,8 +634,8 @@ a {
 				var/mob/M = loc
 				M.regenerate_icons()
 
-/obj/proc/gen_quality(var/modifier = 0, var/min_quality = 0)
-	var/material_mod = material_type ? material_type.quality_mod : 1
+/obj/proc/gen_quality(var/modifier = 0, var/min_quality = 0, var/datum/material/mat)
+	var/material_mod = mat ? mat.quality_mod : material_type ? material_type.quality_mod : 1
 	var/surrounding_mod = 1
 	/* - Probably better we find a better way of checking the quality of a room, like an area-level variable for room quality, and cleanliness
 	var/turf/T = get_turf(src)

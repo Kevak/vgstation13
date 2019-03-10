@@ -8,9 +8,8 @@
 	custom_process=1
 	destroy_sound = "sound/effects/blobkill.ogg"
 	var/overmind_get_delay = 0 // we don't want to constantly try to find an overmind, do it every 30 seconds
-	var/resource_delay = 0
 	var/last_resource_collection
-	var/point_rate = 2
+	var/point_rate = 1
 	var/mob/camera/blob/creator = null
 	layer = BLOB_CORE_LAYER
 	var/core_warning_delay = 0
@@ -20,8 +19,7 @@
 	icon_classic = "blob_core"
 
 
-//obj/effect/blob/core/New(loc, var/h = 200, var/client/new_overmind = null, var/new_rate = 2, var/mob/camera/blob/C = null,newlook = "new",no_morph = 0) HALLOWEEN
-/obj/effect/blob/core/New(loc, var/h = 200, var/client/new_overmind = null, var/new_rate = 2, var/mob/camera/blob/C = null,newlook = "skelleton",no_morph = 0)
+/obj/effect/blob/core/New(loc, var/h = 200, var/client/new_overmind = null, var/new_rate = 2, var/mob/camera/blob/C = null,newlook = "new",no_morph = 0)
 	looks = newlook
 	blob_cores += src
 	processing_objects.Add(src)
@@ -65,7 +63,7 @@
 	if(overmind)
 		overmind.update_health()
 		if((health < previous_health) && (core_warning_delay <= world.time))
-			resource_delay = world.time + (3 SECONDS)
+			core_warning_delay = world.time + (3 SECONDS)
 			to_chat(overmind,"<span class='danger'>YOUR CORE IS UNDER ATTACK!</span> <b><a href='?src=\ref[overmind];blobjump=\ref[loc]'>(JUMP)</a></b>")
 
 	previous_health = health
@@ -94,9 +92,9 @@
 		var/turf/T = get_turf(overmind) //The overmind's mind can expand the blob
 		var/obj/effect/blob/O = locate() in T //As long as it is 'thinking' about a blob already
 		for(var/i = 1; i < 8; i += i)
-			Pulse(0, i)
+			Pulse(0, i, overmind)
 			if(istype(O))
-				O.Pulse(0,i)
+				O.Pulse(5, i, overmind) //Pulse starting at 5 instead of 0 like a node
 		for(var/b_dir in alldirs)
 			if(!prob(5))
 				continue
@@ -112,7 +110,7 @@
 	return 0
 
 /obj/effect/blob/core/proc/recruit_overmind()
-	var/list/possible_candidates = get_candidates(ROLE_BLOB)
+	var/list/possible_candidates = get_candidates(BLOBOVERMIND)
 	var/icon/logo_icon = icon('icons/logos.dmi', "blob-logo")
 	for(var/client/candidate in possible_candidates)
 		if(istype(candidate.eye,/obj/item/projectile/meteor/blob/core))
@@ -137,7 +135,7 @@
 	if(!new_overmind)
 		return 0
 
-	if (jobban_isbanned(new_overmind.mob, ROLE_BLOB))
+	if (jobban_isbanned(new_overmind.mob, BLOBOVERMIND) || isantagbanned(new_overmind.mob))
 		to_chat(usr, "<span class='warning'>You are banned from this role.</span>")
 		return 0
 
@@ -152,7 +150,16 @@
 
 	var/datum/faction/blob_conglomerate/conglomerate = find_active_faction_by_type(/datum/faction/blob_conglomerate)
 	if(conglomerate)
-		conglomerate.HandleRecruitedMind(B.mind)
+		var/ded = TRUE
+		if(conglomerate.members.len)
+			for(var/datum/role/R in conglomerate.members)
+				if (R.antag && R.antag.current && !(R.antag.current.isDead()))
+					ded = FALSE
+					break
+		if(ded)
+			conglomerate.HandleNewMind(B.mind)
+		else
+			conglomerate.HandleRecruitedMind(B.mind)
 	else
 		conglomerate = ticker.mode.CreateFaction(/datum/faction/blob_conglomerate)
 		if(conglomerate)
@@ -162,7 +169,8 @@
 		icon_state = "core"
 		flick("morph_cerebrate",src)
 		var/datum/role/blob_overmind/BO = B.mind.GetRole(BLOBOVERMIND)
-		BO.logo_state = "cerebrate-logo"
+		if (BO)
+			BO.logo_state = "cerebrate-logo"
 
 	B.special_blobs += src
 	B.hud_used.blob_hud()

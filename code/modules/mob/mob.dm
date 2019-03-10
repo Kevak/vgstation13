@@ -3,6 +3,7 @@
 
 /mob
 	plane = MOB_PLANE
+	var/said_last_words = 0 // All mobs can now whisper as they die
 
 /mob/variable_edited(var_name, old_value, new_value)
 	.=..()
@@ -107,6 +108,8 @@
 			qdel(A)
 		orient_object = null
 
+	if (ticker && ticker.mode)
+		ticker.mode.mob_destroyed(src)
 	..()
 
 /mob/projectile_check()
@@ -1034,11 +1037,12 @@ var/list/slot_equipment_priority = list( \
 //note: ghosts can point, this is intended
 //visible_message will handle invisibility properly
 //overriden here and in /mob/dead/observer for different point span classes and sanity checks
-/mob/verb/pointed(atom/A as turf | obj | mob in view())
+/mob/verb/pointed(atom/A as turf | obj | mob in view(get_turf(src)))
 	set name = "Point To"
 	set category = "Object"
 
-	if((usr.isUnconscious() && !isobserver(src)) || !isturf(src.loc) || attack_delayer.blocked())
+
+	if((usr.isUnconscious() && !isobserver(src)) || !(get_turf(src))|| attack_delayer.blocked())
 		return 0
 
 	delayNextAttack(SHOW_HELD_ITEM_AND_POINTING_DELAY)
@@ -1048,7 +1052,7 @@ var/list/slot_equipment_priority = list( \
 		I.showoff(src)
 		return 0
 
-	if(!(A in view(src.loc) + get_all_slots()))
+	if(!(A in (view(get_turf(src)) + get_all_slots())))
 		return 0
 
 	if(istype(A, /obj/effect/decal/point))
@@ -1217,6 +1221,10 @@ var/list/slot_equipment_priority = list( \
 //	if( (sdisabilities & BLIND || blinded || stat) && !istype(src,/mob/dead/observer) )
 	if(is_blind(src))
 		to_chat(src, "<span class='notice'>Something is there but you can't see it.</span>")
+		return
+
+	if(get_dist(A,client.eye) > client.view)
+		to_chat(src, "<span class='notice'>It is too far away to make out.</span>")
 		return
 
 	face_atom(A)
@@ -1450,6 +1458,9 @@ var/list/slot_equipment_priority = list( \
 		var/t1 = text("window=[href_list["mach_close"]]")
 		unset_machine()
 		src << browse(null, t1)
+	else if (href_list["lookitem"])
+		var/obj/item/I = locate(href_list["lookitem"])
+		usr.examination(I)
 	else
 		return ..()
 	//if (href_list["joinresponseteam"])
@@ -2172,7 +2183,7 @@ mob/proc/on_foot()
 /mob/proc/is_pacified(var/message = VIOLENCE_SILENT,var/target,var/weapon)
 	if(!(status_flags & PACIFIABLE))
 		return 0
-	if (reagents && reagents.has_reagent(CHILLWAX))
+	if (reagents && (reagents.has_reagent(CHILLWAX) || (reagents.has_reagent(INCENSE_POPPIES) && prob(50))))
 		switch (message)
 			if (VIOLENCE_DEFAULT)//unarmed, melee weapon, spell
 				to_chat(src, "<span class='notice'>[pick("Like...violence...what is it even good for?","Nah, you don't feel like doing that.","What did \the [target] even do to you? Chill out.")]</span>")
@@ -2203,6 +2214,13 @@ mob/proc/on_foot()
 		for (var/role in mind.antag_roles)
 			var/datum/role/R = mind.antag_roles[role]
 			R.update_antag_hud()
+
+/mob/proc/CheckSlip(slip_on_walking = FALSE, overlay_type = TURF_WET_WATER, slip_on_magbooties = FALSE)
+	return FALSE
+
+// Returns TRUE on success
+/mob/proc/attempt_crawling(var/turf/target)
+	return FALSE
 
 #undef MOB_SPACEDRUGS_HALLUCINATING
 #undef MOB_MINDBREAKER_HALLUCINATING

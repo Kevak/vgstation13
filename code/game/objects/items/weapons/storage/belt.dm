@@ -163,8 +163,9 @@
 		"/obj/item/device/flashlight/pen",
 		"/obj/item/clothing/mask/surgical",
 		"/obj/item/clothing/gloves/latex",
-        "/obj/item/weapon/reagent_containers/hypospray/autoinjector",
+		"/obj/item/weapon/reagent_containers/hypospray/autoinjector",
 		"/obj/item/device/mass_spectrometer",
+		"/obj/item/device/reagent_scanner",
 		"/obj/item/device/gps/paramedic",
 		"/obj/item/device/antibody_scanner",
 		"/obj/item/weapon/switchtool/surgery",
@@ -177,6 +178,15 @@
 	desc = "Grey belt that holds less and matches certain jumpsuits.  It looks like it can fit in a backpack."
 	icon_state = "greybelt"
 	item_state = "grey"
+
+/obj/item/weapon/storage/belt/slim/pro/New()
+	..()
+	new /obj/item/weapon/screwdriver(src)
+	new /obj/item/weapon/wrench(src)
+	new /obj/item/weapon/weldingtool(src)
+	new /obj/item/weapon/crowbar(src)
+	new /obj/item/weapon/wirecutters(src)
+	new /obj/item/device/multitool(src)
 
 /obj/item/weapon/storage/belt/security
 	name = "security belt"
@@ -209,12 +219,15 @@
 		"/obj/item/taperoll/police",
 		"/obj/item/taperoll/syndie/police",
 		"/obj/item/weapon/gun/energy/taser",
+		"/obj/item/weapon/gun/energy/stunrevolver",
 		"/obj/item/weapon/gun/projectile/sec",
 		"/obj/item/weapon/legcuffs/bolas",
 		"/obj/item/device/hailer",
 		"obj/item/weapon/melee/telebaton",
 		"/obj/item/device/gps/secure",
-		"/obj/item/clothing/accessory/holobadge"
+		"/obj/item/clothing/accessory/holobadge",
+		"/obj/item/weapon/autocuffer",
+		"/obj/item/weapon/depocket_wand",
 		)
 /obj/item/weapon/storage/belt/security/batmanbelt
 	name = "batbelt"
@@ -331,7 +344,7 @@
 	if(amount != contents.len)
 		update_icon()
 
-/obj/item/weapon/storage/belt/lazarus/remove_from_storage(obj/item/W as obj, atom/new_location)
+/obj/item/weapon/storage/belt/lazarus/remove_from_storage(obj/item/W as obj, atom/new_location, var/force = 0, var/refresh = 1)
 	. = ..()
 	update_icon()
 

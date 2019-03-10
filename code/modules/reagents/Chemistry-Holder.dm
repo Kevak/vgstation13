@@ -149,7 +149,6 @@ var/const/INGEST = 2
 			logged_message += "[current_reagent_transfer]u of [current_reagent.name]"
 			if(current_reagent.id in reagents_to_log)
 				adminwarn_message += "[current_reagent_transfer]u of <span class='warning'>[current_reagent.name]</span>"
-
 		R.add_reagent(current_reagent.id, (current_reagent_transfer * multiplier), trans_data, chem_temp)
 		src.remove_reagent(current_reagent.id, current_reagent_transfer)
 
@@ -259,10 +258,15 @@ trans_to_atmos(var/datum/gas_mixture/target, var/amount=1, var/multiplier=1, var
 /datum/reagents/proc/trans_id_to(var/obj/target, var/reagent, var/amount=1, var/preserve_data=1)//Not sure why this proc didn't exist before. It does now! /N
 	if (!target)
 		return
-	if (!target.reagents || src.is_empty() || !src.get_reagent_amount(reagent))
+	if (src.is_empty() || !src.get_reagent_amount(reagent))
 		return
-
-	var/datum/reagents/R = target.reagents
+	var/datum/reagents/R
+	if(istype(target, /datum/reagents))
+		R = target
+	else
+		if(!target.reagents)
+			return
+		R = target.reagents
 	if(src.get_reagent_amount(reagent)<amount)
 		amount = src.get_reagent_amount(reagent)
 	amount = min(amount, R.maximum_volume-R.total_volume)
@@ -470,7 +474,7 @@ trans_to_atmos(var/datum/gas_mixture/target, var/amount=1, var/multiplier=1, var
 							ME2.name = "used slime extract"
 							ME2.desc = "This extract has been used up."
 
-					if(!quiet)
+					if(!quiet && !(my_atom.flags & SILENTCONTAINER))
 						playsound(my_atom, 'sound/effects/bubbles.ogg', 80, 1)
 
 					C.on_reaction(src, created_volume)
@@ -602,6 +606,7 @@ trans_to_atmos(var/datum/gas_mixture/target, var/amount=1, var/multiplier=1, var
 					R.color = data["blood_colour"]
 			else
 				R.data = data
+		R.on_introduced()
 
 		update_total()
 		my_atom.on_reagent_change()
@@ -758,6 +763,12 @@ trans_to_atmos(var/datum/gas_mixture/target, var/amount=1, var/multiplier=1, var
 		else
 			stuff += A.id
 	return english_list(stuff, "no reagents")
+
+/datum/reagents/proc/get_sportiness()
+	var/sportiness = 1
+	for(var/datum/reagent/R in reagent_list)
+		sportiness *= R.sport
+	return sportiness
 
 /datum/reagents/proc/remove_all_type(var/reagent_type, var/amount, var/strict = 0, var/safety = 1) // Removes all reagent of X type. @strict set to 1 determines whether the childs of the type are included.
 	if(!isnum(amount))

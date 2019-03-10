@@ -595,6 +595,8 @@ Note that amputating the affected organ does in fact remove the infection from t
 		heal_amt = heal_amt * wound_update_accuracy
 		//Configurable regen speed woo, no-regen hardcore or instaheal hugbox, choose your destiny
 		heal_amt = heal_amt * config.organ_regeneration_multiplier
+		if(M_REGEN in owner.mutations)
+			heal_amt = heal_amt * 2 // The heal rate is twice as much if you have regeneration
 		//Amount of healing is spread over all the wounds
 		heal_amt = heal_amt / (wounds.len + 1)
 		//Making it look prettier on scanners
@@ -1926,6 +1928,12 @@ obj/item/organ/external/head/Destroy()
 		if(OE.grasp_id == index && OE.can_grasp)
 			return OE
 	return null
+
+/mob/living/carbon/human/has_hand_check()
+	for(var/datum/organ/external/OE in grasp_organs)
+		if(OE.can_grasp())
+			return TRUE
+	return FALSE
 
 /datum/organ/external/send_to_past(var/duration)
 	..()

@@ -190,7 +190,7 @@
 					if(!(M.dna.unique_enzymes in W.blood_DNA))
 						W.blood_DNA[M.dna.unique_enzymes] = M.dna.b_type
 
-	if(istype(W,/obj/item/weapon/storage/bible) || istype(W,/obj/item/weapon/nullrod))
+	if(istype(W,/obj/item/weapon/storage/bible) || isholyweapon(W))
 		var/mob/dead/M = src
 		if(src.invisibility == 0)
 			M.invisibility = 60
@@ -355,7 +355,7 @@ This is the proc mobs get to turn into a ghost. Forked from ghostize due to comp
 				return
 
 	if(src.health < 0 && stat != DEAD) //crit people
-		succumb()
+		succumb_proc(0)
 		ghostize(1)
 	else if(stat == DEAD)
 		ghostize(1)
@@ -1006,7 +1006,7 @@ This is the proc mobs get to turn into a ghost. Forked from ghostize due to comp
 /mob/dead/observer/pointed(atom/A as mob|obj|turf in view())
 	if(!..())
 		return 0
-	usr.visible_message("<span class='deadsay'><b>[src]</b> points to [A]</span>")
+	usr.visible_message("<span class='deadsay'><b>[src]</b> points to [A]</span>.")
 	return 1
 
 /mob/dead/observer/Login()

@@ -147,7 +147,7 @@
 		var/obj/item/stack/sheet/glass/G = W
 		for(var/datum/stack_recipe/SR in G.recipes)
 			if(ispath(SR.result_type, /obj/structure/window))
-				var/obj/structure/window/S = SR.build(user,G)
+				var/obj/structure/window/S = SR.build(user,G,1,loc)
 				if(S)
 					S.forceMove(get_turf(src))
 					S.dir = get_dir(src, user)
@@ -227,6 +227,16 @@
 		"broken")
 
 	reset_vars_after_duration(resettable_vars, duration)
+
+/obj/structure/grille/AltClick(var/mob/user)
+	. = ..()
+	var/turf/T = loc
+	if (istype(T))
+		if (user.listed_turf == T)
+			user.listed_turf = null
+		else
+			user.listed_turf = T
+			user.client.statpanel = T.name
 
 //Mapping entities and alternatives !
 

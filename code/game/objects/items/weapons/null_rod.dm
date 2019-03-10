@@ -53,8 +53,12 @@
 				to_chat(H, "<span class='warning'>\The [src]'s power violently interferes with your own!</span>")
 				if(V.nullified < 5) //Don't actually reduce their debuff if it's over 5
 					V.nullified = max(5, V.nullified + 2)
+
+				/* undead smite abilities moved to thurible (and silver weapons in general).
+
 				V.smitecounter += 30 //Smithe the shit out of him. Four strikes and he's out
 
+				*/
 
 	//A 25% chance to de-cult per hit that bypasses all protections? Is this some kind of joke? The last thing cult needs right now is that kind of nerfs. Jesus dylan.
 	/*
@@ -67,7 +71,7 @@
 			to_chat(M, "<span class='warning'>\The [src]'s intense field is overwhelming you. Your mind feverishly questions Nar'Sie's teachings!</span>")
 	*/
 
-	..() //Whack their shit regardless. It's an obsidian rod, it breaks skulls
+	. = ..() //Whack their shit regardless. It's an obsidian rod, it breaks skulls
 
 /obj/item/weapon/nullrod/afterattack(var/atom/A, var/mob/user, var/prox_flag, var/params)
 	if(!prox_flag)
@@ -93,6 +97,8 @@
 			to_chat(user, "<span class='warning'>A structure suddenly emerges from the ground!</span>")
 		call(/obj/effect/rune_legacy/proc/revealrunes)(src)//revealing legacy runes as well because why not
 
+/* undead smite abilities moved to thurible. (and silver weapons in general)
+
 /obj/item/weapon/nullrod/pickup(mob/living/user as mob)
 	if(user.mind)
 		if(user.mind.assigned_role == "Chaplain")
@@ -102,6 +108,7 @@
 			if(V && !(VAMP_UNDYING in V.powers))
 				V.smitecounter += 60
 				to_chat(user, "<span class='danger'>You feel an unwanted presence as you pick up the rod. Your body feels like it is burning from the inside!</span>")
+*/
 
 /obj/item/weapon/nullrod/attack_self(mob/user)
 	if(reskinned)
@@ -181,6 +188,15 @@
 	inhand_states = list("left_hand" = 'icons/mob/in-hand/left/toolbox_ihl.dmi', "right_hand" = 'icons/mob/in-hand/right/toolbox_ihr.dmi')
 	w_class = W_CLASS_LARGE
 	fluff_pickup = "robust"
+
+/obj/item/weapon/nullrod/crozius //The Imperial Creed
+	name = "\improper Crozius Arcanum"
+	desc = "Repent! For tomorrow you die!"
+	icon_state = "crozius"
+	item_state = "crozius"
+	inhand_states = list("left_hand" = 'icons/mob/in-hand/left/swords_axes.dmi', "right_hand" = 'icons/mob/in-hand/right/swords_axes.dmi')
+	attack_verb = list("mauls", "batters", "bashes")
+	w_class = W_CLASS_LARGE
 
 /obj/item/weapon/nullrod/spear //Ratvar? How!
 	name = "divine brass spear"
@@ -265,6 +281,45 @@
 	attack_verb = list("bashes", "smashes", "pulverizes")
 	inhand_states = list("left_hand" = 'icons/mob/in-hand/left/swords_axes.dmi', "right_hand" = 'icons/mob/in-hand/right/swords_axes.dmi')
 	fluff_pickup = "smite"
+
+/obj/item/weapon/nullrod/mosinnagant
+	name = "mosin nagant"
+	desc = "Many centuries later, it's still drenched in cosmoline, just like the Murdercube intended. This one cannot be fired."
+	icon = 'icons/obj/gun.dmi'
+	icon_override = "nagant"
+	icon_state = "nagant"
+	item_state = "nagant"
+	slot_flags = SLOT_BELT | SLOT_BACK
+	w_class = W_CLASS_LARGE
+	attack_verb = list("bashes", "smashes", "buttstrokes")
+	inhand_states = list("left_hand" = 'icons/mob/in-hand/left/guninhands_left.dmi', "right_hand" = 'icons/mob/in-hand/right/guninhands_right.dmi')
+
+/obj/item/weapon/nullrod/mosinnagant/attackby(var/obj/item/A, mob/living/user)
+	..()
+	if(istype(A, /obj/item/weapon/circular_saw) || istype(A, /obj/item/weapon/melee/energy) || istype(A, /obj/item/weapon/pickaxe/plasmacutter))
+		to_chat(user, "<span class='notice'>You begin to shorten the barrel of \the [src].</span>")
+		if(do_after(user, src, 30))
+			new /obj/item/weapon/nullrod/mosinnagant/obrez(get_turf(src))
+			qdel(src)
+			to_chat(user, "<span class='warning'>You shorten the barrel of \the [src]!</span>")
+
+/obj/item/weapon/nullrod/mosinnagant/obrez
+	name = "obrez"
+	desc = "Holding this makes you feel like you want to obtain an SKS and go deeper in space. This one cannot be fired."
+	icon = 'icons/obj/gun.dmi'
+	icon_override = "obrez"
+	icon_state = "obrez"
+	item_state = "obrez"
+	slot_flags = SLOT_BELT
+	w_class = W_CLASS_MEDIUM
+	attack_verb = list("bashes", "smashes", "pistol-whips", "clubs")
+	inhand_states = list("left_hand" = 'icons/mob/in-hand/left/guninhands_left.dmi', "right_hand" = 'icons/mob/in-hand/right/guninhands_right.dmi')
+
+/obj/item/weapon/nullrod/mosinnagant/obrez/attackby(var/obj/item/A, mob/living/user)
+    if (istype(A, /obj/item/weapon/circular_saw) || istype(A, /obj/item/weapon/melee/energy) || istype(A, /obj/item/weapon/pickaxe/plasmacutter))
+        return
+    else
+        return ..()
 
 // The chaos blade, a ghost role talking sword. Unlike the nullrod skins this thing works as a proper shield and has sharpness.
 /obj/item/weapon/nullrod/sword/chaos

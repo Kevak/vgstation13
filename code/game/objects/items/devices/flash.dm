@@ -100,6 +100,7 @@
 		else
 			if(Subject.eyecheck() <= 0)
 				Subject.Knockdown(Subject.eyecheck() * 5 * -1 +10)
+				Subject.Stun(Subject.eyecheck() * 5 * -1 +10)
 
 	else if(issilicon(M))
 		var/mob/living/silicon/R = M
@@ -199,6 +200,7 @@
 				var/safety = M.eyecheck()
 				if(safety <= 0 && !M.blinded)
 					M.Knockdown(10)
+					M.Stun(10)
 					M.flash_eyes(visual = 1)
 					for(var/mob/O in viewers(M, null))
 						O.show_message("<span class='disarm'>[M] is blinded by the flash!</span>")
@@ -232,11 +234,6 @@
 		to_chat(user, "<span class='warning'>The bulb has burnt out!</span>")
 		icon_state = "flashburnt"
 		item_state = "flashburnt"
-/*
-/obj/item/device/flash/revsquad
-	limited_conversions = REVSQUAD_FLASH_USES
-	mech_flags = MECH_SCAN_FAIL
-*/
 
 /obj/item/device/flash/rev
 	mech_flags = MECH_SCAN_FAIL
@@ -274,4 +271,7 @@
 
 
 /obj/item/device/flash/rev/revsquad
-	limited_conversions = 2
+	limited_conversions = 1
+
+/obj/item/device/flash/rev/revsquad/emp_act(severity)
+	return

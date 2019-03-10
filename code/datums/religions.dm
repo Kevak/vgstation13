@@ -18,7 +18,9 @@
 	var/list/deity_names = list()
 
 	var/datum/action/renounce/action_renounce
-	var/list/keys = list("christianity") // What you need to type to get this particular relgion.
+	var/list/keys = list("abstractbasetype") // What you need to type to get this particular relgion.
+	var/converts_everyone = FALSE
+	var/preferred_incense = /obj/item/weapon/storage/fancy/incensebox/harebells
 
 /datum/religion/New() // For religions with several bibles/deities
 	if (bible_names.len)
@@ -94,26 +96,30 @@
 	return choice == "Yes"
 
 // Here is the proc to welcome a new soul in our religion.
-/datum/religion/proc/convert(var/mob/living/subject, var/mob/living/preacher)
+/datum/religion/proc/convert(var/mob/living/subject, var/mob/living/preacher, var/can_renounce = TRUE, var/default = FALSE)
 	// If he already had one
 	if (subject.mind.faith)
 		subject.mind.faith.renounce(subject) // We remove him from that one
 
 	subject.mind.faith = src
-	to_chat(subject, "You feel your mind become clear and focused as you discover your newfound faith. You are now a follower of [name].")
 	adepts += subject.mind
-	action_renounce.Grant(subject)
-	if (!preacher)
-		var/msg = "\The [key_name(subject)] has been converted to [name] without a preacher."
-		message_admins(msg)
+	if(can_renounce)
+		action_renounce.Grant(subject)
+	if(!default)
+		to_chat(subject, "<span class='good'>You feel your mind become clear and focused as you discover your newfound faith. You are now a follower of [name].</span>")
+		if (!preacher)
+			var/msg = "\The [key_name(subject)] has been converted to [name] without a preacher."
+			message_admins(msg)
+		else
+			var/msg = "[key_name(subject)] has been converted to [name] by \The [key_name(preacher)]."
+			message_admins(msg)
 	else
-		var/msg = "[key_name(subject)] has been converted to [name] by \The [key_name(preacher)]."
-		message_admins(msg)
+		to_chat(subject, "<span class='good'>You are reminded you were christened into [name] long ago.</span>")
 
 // Activivating a religion with admin interventions.
 /datum/religion/proc/activate(var/mob/living/preacher)
 	equip_chaplain(preacher) // We do the misc things related to the religion
-	to_chat(preacher, "A great, intense revelation go through your spirit. You are now the religious leader of [name]. Convert people by [convert_method]")
+	to_chat(preacher, "A great, intense revelation goes through your spirit. You are now the religious leader of [name]. Convert people by [convert_method]")
 	if (holy_book)
 		preacher.put_in_hands(holy_book)
 	else
@@ -124,6 +130,15 @@
 		preacher.put_in_hands(holy_book)
 	religiousLeader = preacher.mind
 	convert(preacher, null)
+	OnPostActivation()
+
+/datum/religion/proc/OnPostActivation()
+	if(converts_everyone)
+		message_admins("[key_name(religiousLeader)] has selected [name] and converted the entire crew.")
+		for(var/mob/living/carbon/human/H in player_list)
+			if(isReligiousLeader(H))
+				continue
+			convert(H,null,TRUE,TRUE)
 
 /datum/religion/proc/renounce(var/mob/living/subject)
 	to_chat(subject, "<span class='notice'>You renounce [name].</span>")
@@ -164,7 +179,7 @@
 	var/book_style = "Bible"
 
 	book_style = input(user, "Which bible style would you like?") as null|anything in list("Bible", "Koran", "Scrapbook", "Creeper", "White Bible", "Holy Light", "Athiest", "[R.holy_book.name == "Clockwork slab" ? "Slab":"Tome"]", "The King in Yellow", "Ithaqua", "Scientology", \
-																		   "The Bible melts", "Unaussprechlichen Kulten", "Necronomicon", "Book of Shadows", "Torah", "Burning", "Honk", "Ianism", "The Guide")
+																		   "The Bible melts", "Unaussprechlichen Kulten", "Necronomicon", "Book of Shadows", "Torah", "Burning", "Honk", "Ianism", "The Guide", "The Dokument")
 	switch(book_style)
 		if("Koran")
 			R.holy_book.icon_state = "koran"
@@ -227,12 +242,19 @@
 			R.holy_book.icon_state = "slab"
 			R.holy_book.item_state = "slab"
 			R.holy_book.desc = "A bizarre, ticking device... That looks broken."
+		if ("The Dokument")
+			R.holy_book.icon_state = "gunbible"
+			R.holy_book.item_state = "gunbible"
 		else
 			//If christian bible, revert to default
 			R.holy_book.icon_state = "bible"
 			R.holy_book.item_state = "bible"
 
 // The list of all religions spacemen have designed, so far.
+/datum/religion/default
+	keys = list("christianity")
+	converts_everyone = TRUE
+
 /datum/religion/catholic
 	name = "Catholicism"
 	deity_name = "Jesus Christ"
@@ -257,6 +279,7 @@
 	male_adept = "Magister"
 	female_adept = "Magistera"
 	keys = list("satan", "evil", "satanism")
+	preferred_incense = /obj/item/weapon/storage/fancy/incensebox/moonflowers
 
 /datum/religion/lovecraft
 	name = "Esoteric order of Dagon"
@@ -285,6 +308,10 @@
 	male_adept = "Master of Slam"
 	female_adept = "Mistress of Slam"
 	keys = list("slam", "bball", "basketball", "basket ball")
+	preferred_incense = /obj/item/weapon/storage/fancy/incensebox/vale
+
+/datum/religion/slam/equip_chaplain(var/mob/living/carbon/human/H)
+	H.put_in_hands(new/obj/item/weapon/beach_ball/holoball)
 
 /datum/religion/judaism
 	name = "Judaism"
@@ -357,6 +384,7 @@
 	male_adept = "Druid"
 	female_adept = "Druidess"
 	keys = list("druidism", "celtic")
+	preferred_incense = /obj/item/weapon/storage/fancy/incensebox/leafy
 
 /datum/religion/atheism
 	name = "Atheism"
@@ -366,6 +394,7 @@
 	male_adept = "Militant Atheist" // Wasn't defined so the poor dude ended up being a chaplain
 	female_adept = "Militant Atheist"
 	keys = list("atheism", "none")
+	preferred_incense = /obj/item/weapon/storage/fancy/incensebox/sunflowers
 
 /datum/religion/atheism/equip_chaplain(var/mob/living/carbon/human/H)
 	H.equip_or_collect(new /obj/item/clothing/head/fedora(H), slot_head)
@@ -378,6 +407,7 @@
 	male_adept = "Biologist"
 	female_adept = "Biologist"
 	keys = list("evolution", "biology", "monkey", "monkeys")
+	preferred_incense = /obj/item/weapon/storage/fancy/incensebox/banana
 
 /datum/religion/scientology
 	name = "Scientology"
@@ -400,6 +430,7 @@
 	deity_name = "Haile Selassie I"
 	bible_name = "The Holy Piby"
 	keys = list("rastafarianism", "rastafari movement")
+	preferred_incense = /obj/item/weapon/storage/fancy/incensebox/poppies
 
 /datum/religion/hellenism
 	name = "Hellenism"
@@ -426,6 +457,7 @@
 	deity_name = "The Flying Spaghetti Monster"
 	bible_name = "The Gospel of the Flying Spaghetti Monster"
 	keys = list("pastafarianism")
+	preferred_incense = /obj/item/weapon/storage/fancy/incensebox/sunflowers
 
 /datum/religion/chaos
 	name = "Chaos"
@@ -443,6 +475,10 @@
 	female_adept = "Prioress"
 	keys = list("imperium", "imperial cult")
 
+/datum/religion/imperium/equip_chaplain(var/mob/living/carbon/human/H)
+	H.equip_or_collect(new /obj/item/clothing/head/helmet/knight/interrogator(H), slot_head)
+	H.equip_or_collect(new /obj/item/clothing/suit/armor/knight/interrogator(H), slot_wear_suit)
+
 /datum/religion/toolboxia
 	name = "Toolboxia"
 	deity_name = "The Toolbox"
@@ -459,6 +495,7 @@
 	male_adept = "LGBT Advocate"
 	female_adept = "LGBT Advocate"
 	keys = list("homosexuality", "faggotry", "gayness", "gay", "penis", "faggot", "cock", "cocks", "dick", "dicks")
+	preferred_incense = /obj/item/weapon/storage/fancy/incensebox/banana
 
 /datum/religion/homosexuality/equip_chaplain(var/mob/living/carbon/human/H)
 	H.equip_or_collect(new /obj/item/clothing/under/darkholme(H), slot_w_uniform)
@@ -472,6 +509,7 @@
 	female_adept = "Retard"
 	keys = list("lol", "wtf", "ass", "poo", "badmin", "shitmin", "deadmin", "nigger", "dickbutt", ":^)", "XD", "le", "meme", "memes", "ayy", "ayy lmao", "lmao", "reddit", "4chan", "tumblr", "9gag", "brian damag")
 	convert_method = "standing both next to a table."
+	preferred_incense = /obj/item/weapon/storage/fancy/incensebox/banana
 
 /datum/religion/retard/equip_chaplain(var/mob/living/carbon/human/H)
 	H.setBrainLoss(100) //Starts off retarded as fuck, that'll teach him
@@ -512,7 +550,7 @@
 	convert(subject, preacher)
 	return TRUE
 
-/datum/religion/retard/convert(var/mob/living/preacher, var/mob/living/subject)
+/datum/religion/retard/convert(var/mob/living/preacher, var/mob/living/subject, var/can_renounce = TRUE)
 	. = ..()
 	if (subject)
 		subject.adjustBrainLoss(100) // Welcome to the club
@@ -525,6 +563,7 @@
 	male_adept = "Academician"
 	female_adept = "Academician"
 	keys = list("Science")
+	preferred_incense = /obj/item/weapon/storage/fancy/incensebox/sunflowers
 
 /datum/religion/justice
 	name = "Tribunal"
@@ -542,8 +581,8 @@
 	female_adept = "Disciple of the Nine"
 	keys = list("nine divines", "eight divines")
 
-/datum/religion/deadra
-	name = "Cult of the Deadreas"
+/datum/religion/daedra
+	name = "Cult of the Daedreas"
 	deity_names = list("Azura", "Boethiah", "Sheogorath", "Sanguine", "Hircine", "Meridia", "Hermaeus Mora", "Nocturnal", "Oghma Infinium")
 	bible_names = list("The Blessings of Sheogorath", "Boethiah's Pillow Book", "Invocation of Azura")
 	male_adept = "Daedra Worshipper"
@@ -598,6 +637,7 @@
 	male_adept = "Veterinarian"
 	female_adept = "Veterinarian"
 	keys = list("ianism", "ian", "dog", "puppy", "doggo", "pupper")
+	preferred_incense = /obj/item/weapon/storage/fancy/incensebox/leafy
 
 /datum/religion/admins
 	name = "Adminism"
@@ -633,6 +673,7 @@
 	male_adept = "Ghost"
 	female_adept = "Ghost"
 	keys = list("spook", "spooky", "boo", "ghost", "halloween", "2spooky")
+	preferred_incense = /obj/item/weapon/storage/fancy/incensebox/moonflowers
 
 /datum/religion/spooky/equip_chaplain(var/mob/living/carbon/human/H)
 	H.equip_or_collect(new /obj/item/clothing/head/pumpkinhead(H), slot_head)
@@ -683,6 +724,7 @@
 	male_adept = "Drunkard"
 	female_adept = "Drunkard"
 	keys = list("alcohol", "booze", "beer", "wine", "ethanol", "c2h6o")
+	preferred_incense = /obj/item/weapon/storage/fancy/incensebox/booze
 
 /datum/religion/robutness
 	name = "Robustness"
@@ -692,6 +734,7 @@
 	male_adept = "Robuster"
 	female_adept = "Robuster"
 	keys = list("robust", "robustness", "strength")
+	preferred_incense = /obj/item/weapon/storage/fancy/incensebox/vale
 
 /datum/religion/suicide
 	name = "Thanatology" // Guess it works
@@ -701,6 +744,7 @@
 	male_adept = "Reaper"
 	female_adept = "Reaper"
 	keys = list("suicide", "death", "succumb")
+	preferred_incense = /obj/item/weapon/storage/fancy/incensebox/moonflowers
 
 /datum/religion/communism
 	name = "Communism"
@@ -746,6 +790,7 @@
 	male_adept = "Feldbischof" //No seriously, that's a thing, look it up
 	female_adept = "Feldbischof"
 	keys = list("fascism", "nazi", "national socialism")
+	preferred_incense = /obj/item/weapon/storage/fancy/incensebox/dense
 
 /datum/religion/nazism/equip_chaplain(var/mob/living/carbon/human/H)
 	H.equip_or_collect(new /obj/item/clothing/head/naziofficer(H), slot_head)
@@ -758,7 +803,7 @@
 	female_adept = "Nanotrasen Officer"
 	keys = list("security", "space law", "law", "nanotrasen", "centcomm")
 	convert_method = "performing a ritual with a flashbang and a screwdriver. You need to hold the flashbang, with its timer set to 5 seconds, your convert needs to hold the screwdriver and have a free empty hand."
-
+	preferred_incense = /obj/item/weapon/storage/fancy/incensebox/dense
 
 /datum/religion/security/equip_chaplain(var/mob/living/carbon/human/H)
 	H.equip_or_collect(new /obj/item/clothing/head/centhat(H), slot_head)
@@ -822,8 +867,9 @@
 	bible_name = "The Arcane Tome"
 	male_adept = "Cultist"
 	female_adept = "Cultist"
-	keys = list("cult", "narsie", "nar'sie", "narnar", "nar-sie")
+	keys = list("cult", "narsie", "nar'sie", "narnar", "nar-sie", "papa narnar", "geometer", "geometer of blood")
 	convert_method = "performing a ritual with a paper. The subject will need to stand a crayon-drawn rune."
+	preferred_incense = /obj/item/weapon/storage/fancy/incensebox/moonflowers
 
 /datum/religion/cult/convertCeremony(var/mob/living/preacher, var/mob/living/subject)
 	var/obj/effect/decal/cleanable/crayon/rune = locate(/obj/effect/decal/cleanable/crayon/, subject.loc)
@@ -865,6 +911,7 @@
 	male_adept = "Revolutionary"
 	female_adept = "Revolutionary"
 	keys = list("revolution", "rev", "revolt")
+	preferred_incense = /obj/item/weapon/storage/fancy/incensebox/dense
 
 /datum/religion/wizard
 	name = "Wizardry"
@@ -873,6 +920,7 @@
 	male_adept = "Wizard"
 	female_adept = "Wizard"
 	keys = list("wizard", "wiz", "magic")
+	preferred_incense = /obj/item/weapon/storage/fancy/incensebox/dense
 
 /datum/religion/wizard/equip_chaplain(var/mob/living/carbon/human/H)
 	H.equip_or_collect(new /obj/item/clothing/head/wizard(H), slot_head)
@@ -896,9 +944,11 @@
 	male_adept = "Vampire"
 	female_adept = "Vampire"
 	keys = list("vampire", "vamp", "blood","dracula")
+	preferred_incense = /obj/item/weapon/storage/fancy/incensebox/moonflowers
 
 /datum/religion/vampirism/equip_chaplain(var/mob/living/carbon/human/H)
 	H.equip_or_collect(new /obj/item/clothing/suit/storage/draculacoat(H), slot_wear_suit)//What could possibly go wrong?
+	H.equip_or_collect(new /obj/item/clothing/mask/vamp_fangs(H), slot_wear_mask)
 
 /datum/religion/vox
 	name = "Voxophilia"
@@ -907,6 +957,7 @@
 	male_adept = "Vox Enthusiast" //And that's terrible
 	female_adept = "Vox Enthusiast"
 	keys = list("vox", "raiders", "raid", "bird", "birb")
+	preferred_incense = /obj/item/weapon/storage/fancy/incensebox/vapor
 
 /datum/religion/bleb
 	name = "Blob Worship"
@@ -923,6 +974,7 @@
 	male_adept = "Co-Clown"
 	female_adept = "Co-Clown"
 	keys = list("honk", "clown", "honkmother")
+	preferred_incense = /obj/item/weapon/storage/fancy/incensebox/banana
 
 /datum/religion/clown/equip_chaplain(var/mob/living/carbon/human/H)
 	H.equip_or_collect(new /obj/item/clothing/mask/gas/clown_hat(H), slot_wear_mask)
@@ -989,11 +1041,11 @@
 
 /datum/religion/vegan
 	name = "Veganism"
-
 	bible_name = "Mercy For Animals"
 	male_adept = "Animal Rights Activist"
 	female_adept = "Animal Rights Activist"
 	keys = list("vegan","vegetarian","veganism","vegetarianism", "animals", "animal rights")
+	preferred_incense = /obj/item/weapon/storage/fancy/incensebox/leafy
 
 /datum/religion/vegan/equip_chaplain(var/mob/living/carbon/human/H)
 	//Add veganism disability
@@ -1007,6 +1059,7 @@
 	male_adept = "Expedition Leader"
 	female_adept = "Expedition Leader"
 	keys = list("armok", "dwarf", "dorf", "dwarf fortress", "dorf fort")
+	preferred_incense = /obj/item/weapon/storage/fancy/incensebox/booze
 
 /datum/religion/art
 	name = "The Joy of Painting"
@@ -1029,9 +1082,61 @@
 	male_adept = "Janitor"
 	female_adept = "Janitor"
 	keys = list("clean","cleaning","Mr. Clean","janitor")
+	preferred_incense = /obj/item/weapon/storage/fancy/incensebox/vapor
 
 /datum/religion/clean/equip_chaplain(var/mob/living/carbon/human/H)
 	H.put_in_hands(new /obj/item/weapon/mop)
 	H.h_style = "Bald"
 	H.f_style = "Shaved"
 	H.update_hair()
+
+/datum/religion/guns
+	name = "Murdercube"
+	deity_name = "Gun Jesus"
+	bible_name = "The Dokument"
+	male_adept = "Kommando"
+	female_adept = "Kommando"
+	keys = list("murdercube","murderkube", "murder/k/ube","forgotten weapons", "gun", "guns", "ammo", "trigger discipline", "ave nex alea", "dakka")
+	convert_method = "performing a ritual with a gun. The convert needs to be in good health and unafraid of being shot."
+	preferred_incense = /obj/item/weapon/storage/fancy/incensebox/dense
+
+/datum/religion/guns/equip_chaplain(var/mob/living/carbon/human/H)
+	H.equip_or_collect(new /obj/item/weapon/gun/energy/laser/practice)
+	H.equip_or_collect(new /obj/item/clothing/under/syndicate, slot_w_uniform)
+	H.equip_or_collect(new /obj/item/clothing/shoes/jackboots, slot_shoes)
+
+/datum/religion/guns/convertCeremony(var/mob/living/preacher, var/mob/living/subject)
+	var/held_gun = preacher.find_held_item_by_type(/obj/item/weapon/gun)
+
+	if (!held_gun)
+		to_chat(preacher, "<span class='warning'>You need to hold a gun to begin the conversion.</span>")
+		return FALSE
+
+	if(!convertCheck(subject))
+		subject.visible_message("<span class='warning'>\The [subject] refuses conversion.</span>")
+		return FALSE
+
+	var/obj/item/weapon/gun/G = preacher.held_items[held_gun]
+
+	sleep(0.1 SECONDS)
+	if(G.canbe_fired())
+		G.Fire(subject,preacher,0,0,1)
+	else
+		G.click_empty(preacher)
+		return FALSE
+
+	preacher.say("AVE NEX ALEA!")
+
+	subject.visible_message("<span class='notice'>\The [subject] masterfully completed the delicate ritual. He's now a full-fledged follower of the [deity_name].</span>")
+
+	convert(subject, preacher)
+	return TRUE
+
+/datum/religion/speedrun
+	name = "Speedrunning"
+	deity_name = "TASbot"
+	bible_name = "Guide to Speedrunning"
+	male_adept = "Speedrunner"
+	female_adept = "Speedrunner"
+	keys = list("speedrun","ADGQ","SGDQ","any%", "glitchless", "100%", "gotta go fast", "kill the animals", "greetings from germany", "cancer", "dilation station", "dilation stations")
+	preferred_incense = /obj/item/weapon/storage/fancy/incensebox/novaflowers

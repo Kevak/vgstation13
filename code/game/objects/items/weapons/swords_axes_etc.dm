@@ -35,7 +35,7 @@
 /obj/item/weapon/melee/classic_baton/attack(mob/M as mob, mob/living/user as mob)
 	if (clumsy_check(user) && prob(50))
 		to_chat(user, "<span class='warning'>You club yourself over the head.</span>")
-		user.Knockdown(3 * force)
+		user.Knockdown(8)
 		if(ishuman(user))
 			var/mob/living/carbon/human/H = user
 			H.apply_damage(2*force, BRUTE, LIMB_HEAD)
@@ -145,7 +145,7 @@
 			user.simple_message("<span class='warning'>You club yourself over the head.</span>",
 				"<span class='danger'>The fishing rod goes mad!</span>")
 
-			user.Knockdown(3 * force)
+			user.Knockdown(4)
 			if(ishuman(user))
 				var/mob/living/carbon/human/H = user
 				H.apply_damage(2*force, BRUTE, LIMB_HEAD)
@@ -207,6 +207,7 @@
 		src.w_class = W_CLASS_HUGE
 		src.sharpness = 1.5
 		src.sharpness_flags = SHARP_BLADE | HOT_EDGE
+		src.armor_penetration = 100
 	else
 		to_chat(user, "<span class='notice'>\The [src] can now be concealed.</span>")
 		src.force = initial(src.force)
@@ -214,6 +215,7 @@
 		src.w_class = initial(src.w_class)
 		src.sharpness = initial(src.sharpness)
 		src.sharpness_flags = initial(src.sharpness_flags)
+		src.armor_penetration = initial(armor_penetration)
 	src.add_fingerprint(user)
 	return
 

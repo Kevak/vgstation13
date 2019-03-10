@@ -225,11 +225,13 @@ var/obj/item/weapon/disk/nuclear/nukedisk
 					else
 						src.icon_state = "nuclearbomb1"
 						bomb_set = 0
+						score["nukedefuse"] = min(src.timeleft, score["nukedefuse"])
 				if (href_list["safety"])
 					src.safety = !( src.safety )
 					if(safety)
 						src.timing = 0
 						bomb_set = 0
+						score["nukedefuse"] = min(src.timeleft, score["nukedefuse"])
 				if (href_list["anchor"])
 
 					if(removal_stage == 5)
@@ -312,10 +314,8 @@ var/obj/item/weapon/disk/nuclear/nukedisk
 /obj/item/weapon/disk/nuclear
 	name = "nuclear authentication disk"
 	desc = "Better keep this safe."
-	icon_state = "nucleardisk"
-	item_state = "card-id"
+	icon_state = "disk_nuke"
 	flags = FPRINT | TIMELESS
-	w_class = W_CLASS_TINY
 	var/respawned = 0
 
 /obj/item/weapon/disk/nuclear/New()
@@ -359,4 +359,3 @@ var/obj/item/weapon/disk/nuclear/nukedisk
 		for(A=src, A && A.loc && !isturf(A.loc), A=A.loc);  // semicolon is for the empty statement
 		message_admins("\The [src] ended up in a non-authorised z-Level somehow, and has been replaced.[loc ? " It was contained in [A] when it was moved." : ""]")
 		qdel(src)
-

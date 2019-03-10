@@ -30,10 +30,27 @@
 	var/friendly_fire = 0 //If set to 1, they won't hesitate to shoot their target even if a friendly is in the way.
 	var/armor_modifier = 1 //The higher this is, the more effect armor has on melee attacks
 
+	var/list/target_rules = list()
+
+/mob/living/simple_animal/hostile/New()
+	..()
+	initialize_rules()
+
+/mob/living/simple_animal/hostile/proc/initialize_rules()
+	target_rules.Add(new /datum/fuzzy_ruling/is_mob)
+	target_rules.Add(new /datum/fuzzy_ruling/is_obj{weighting = 0.5})
+	var/datum/fuzzy_ruling/distance/D = new /datum/fuzzy_ruling/distance
+	D.set_source(src)
+	target_rules.Add(D)
+
 /mob/living/simple_animal/hostile/resetVariables()
-	..("wanted_objects", "friends", args)
+	..("wanted_objects", "friends", "target_rule", args)
 	wanted_objects = list()
 	friends = list()
+	target_rules = list()
+
+/mob/living/simple_animal/hostile/whisper()
+	return FALSE
 
 /mob/living/simple_animal/hostile/Life()
 	if(timestopped)
@@ -81,16 +98,13 @@
 
 /mob/living/simple_animal/hostile/proc/ListTargets()//Step 1, find out what we can see
 	var/list/L = new()
-
 	if (!search_objects)
 		L.Add(ohearers(vision_range, src))
-
 		for (var/obj/mecha/M in mechas_list)
 			if (get_dist(M, src) <= vision_range && can_see(src, M, vision_range))
 				L.Add(M)
 	else
 		L.Add(oview(vision_range, src))
-
 	return L
 
 /mob/living/simple_animal/hostile/proc/FindTarget()//Step 2, filter down possible targets to things we actually care about
@@ -106,7 +120,8 @@
 			Targets += A
 			continue
 	Target = PickTarget(Targets)
-	return Target //We now have a target
+	if(Target)
+		return Target //We now have a target
 
 /mob/living/simple_animal/hostile/proc/Found(var/atom/A)//This is here as a potential override to pick a specific target if available
 	return
@@ -120,7 +135,8 @@
 				Targets -= A
 	if(!Targets.len)//We didnt find nothin!
 		return
-	var/chosen_target = pick(Targets)//Pick the remaining targets (if any) at random
+	Targets = evaluate_list(Targets, target_rules)
+	var/chosen_target = Targets[1]//Pick the top target, as it would be highest priority
 	return chosen_target
 
 /mob/living/simple_animal/hostile/CanAttack(var/atom/the_target)//Can we actually attack a possible target?

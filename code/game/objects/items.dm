@@ -8,6 +8,7 @@
 	var/r_speed = 1.0
 	var/health = null
 	var/hitsound = null
+	var/armor_penetration = 0 // Chance from 0 to 100 to reduce absorb by one, and then rolls the same value. Check living_defense.dm
 
 	var/w_class = W_CLASS_MEDIUM
 	var/attack_delay = 10 //Delay between attacking with this item, in 1/10s of a second (default = 1 second)
@@ -807,12 +808,25 @@
 
 		return CANNOT_EQUIP
 
+	else if(isgrinch(M))
+		//START GRINCH
+		var/mob/living/simple_animal/hostile/gremlin/grinch/G = M
+		switch(slot)
+			if(slot_back)
+				if(G.back)
+					return CANNOT_EQUIP
+				if(!(slot_flags & SLOT_BACK) )
+					return CANNOT_EQUIP
+				return CAN_EQUIP
+		return CANNOT_EQUIP //Unsupported slot
+		//END GRINCH
+
 /obj/item/can_pickup(mob/living/user)
 	if(!(user) || !isliving(user)) //BS12 EDIT
 		return FALSE
 	if(user.incapacitated() || !Adjacent(user))
 		return FALSE
-	if((!iscarbon(user) && !isMoMMI(user)) && !ishologram(user) || isbrain(user)) //Is not a carbon being, MoMMI, advanced hologram, or is a brain
+	if((!iscarbon(user) && !isMoMMI(user)) && !ishologram(user) && !isgrinch(user) || isbrain(user)) //Is not a carbon being, MoMMI, advanced hologram, or is a brain
 		to_chat(user, "You can't pick things up!")
 		return FALSE
 	if(anchored) //Object isn't anchored
@@ -1203,7 +1217,7 @@ var/global/list/image/blood_overlays = list()
 		var/mob/living/carbon/human/H = C
 		if (!H.has_organ_for_slot(slot_handcuffed))
 			to_chat(user, "<span class='danger'>\The [C] needs at least two wrists before you can cuff them together!</span>")
-			return
+			return FALSE
 
 	if(restraint_apply_sound)
 		playsound(src, restraint_apply_sound, 30, 1, -2)
@@ -1213,7 +1227,7 @@ var/global/list/image/blood_overlays = list()
 	if(do_after(user, C, restraint_apply_time))
 		if(C.handcuffed)
 			to_chat(user, "<span class='notice'>\The [C] is already handcuffed.</span>")
-			return
+			return FALSE
 		feedback_add_details("handcuffs", "[name]")
 
 		if(clumsy_check(user) && prob(50))
@@ -1232,6 +1246,7 @@ var/global/list/image/blood_overlays = list()
 			user.drop_from_inventory(cuffs)
 		C.equip_to_slot(cuffs, slot_handcuffed)
 		cuffs.on_restraint_apply(C)
+		return TRUE
 
 /obj/item/proc/on_restraint_removal(var/mob/living/carbon/C) //Needed for syndicuffs
 	return

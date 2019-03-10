@@ -32,6 +32,13 @@
 	clothing_flags = ONESIZEFITSALL
 	armor = list(melee = 50, bullet = 15, laser = 50, energy = 10, bomb = 25, bio = 0, rad = 0)
 
+/obj/item/clothing/suit/armor/vest/attackby(obj/item/I, mob/user)
+	if(istype(I,/obj/item/weapon/grenade))
+		for(var/obj/item/clothing/accessory/bangerboy/B in accessories)
+			B.attackby(I,user)
+	else
+		..()
+
 /obj/item/clothing/suit/armor/vest/security
 	name = "security armor"
 	desc = "An armored vest that protects against some damage. This one has Nanotrasen corporate badge."
@@ -100,6 +107,16 @@
 /obj/item/clothing/suit/armor/knight/plain
 	icon_state = "knight_grey"
 	item_state = "knight_grey"
+
+/obj/item/clothing/suit/armor/knight/interrogator
+	name = "interrogator armour"
+	desc = "A fancy suit of plate armour, marked by the oath of the dark angels."
+	icon_state = "interrogator-green"
+	item_state = "interrogator-green"
+
+/obj/item/clothing/suit/armor/knight/interrogator/red
+	icon_state = "interrogator-red"
+	item_state = "interrogator-red"
 
 /obj/item/clothing/suit/armor/xcomsquaddie
 	name = "Squaddie Armor"

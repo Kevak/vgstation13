@@ -149,7 +149,9 @@
 		if (RITUALABORT_NEAR)
 			if (activator)
 				to_chat(activator, "<span class='warning'>You cannot perform this ritual that close from another similar structure.</span>")
-
+		if (RITUALABORT_OUTPOST)
+			if (activator)
+				to_chat(activator, "<span class='sinister'>The veil here is still too dense to allow raising structures from the realm of Nar-Sie. We must raise our structure in the heart of the station.</span>")
 
 
 	for(var/mob/living/L in contributors)
@@ -162,6 +164,12 @@
 
 	if (progbar)
 		progbar.loc = null
+
+	if (HOLOMAP_MARKER_CULT_RUNE+"_\ref[spell_holder]" in holomap_markers)
+		var/datum/holomap_marker/holomarker = holomap_markers[HOLOMAP_MARKER_CULT_RUNE+"_\ref[spell_holder]"]
+		holomarker.id = HOLOMAP_MARKER_CULT_RUNE
+		holomarker.color = null
+		holomap_markers[HOLOMAP_MARKER_CULT_RUNE+"_\ref[spell_holder]"] = holomarker
 
 	if (spell_holder.icon_state == "temp")
 		qdel(spell_holder)
@@ -243,20 +251,37 @@
 	var/turf/loc_memory = null
 	var/spawntype = /obj/structure/cult/altar
 
+/datum/rune_spell/raisestructure/proc/proximity_check()
+	var/obj/effect/rune/R = spell_holder
+	if (locate(/obj/structure/cult) in range(R.loc,1))
+		abort(RITUALABORT_BLOCKED)
+		return FALSE
+
+	if (locate(/obj/machinery/door/mineral/cult) in range(R.loc,1))
+		abort(RITUALABORT_NEAR)
+		return FALSE
+
+	else return TRUE
+
 /datum/rune_spell/raisestructure/cast()
 	var/obj/effect/rune/R = spell_holder
 	R.one_pulse()
 
-	if (locate(/obj/structure/cult) in range(R.loc,1))
-		abort(RITUALABORT_BLOCKED)
-		return
-
-	if (locate(/obj/machinery/door/mineral/cult) in range(R.loc,1))
-		abort(RITUALABORT_NEAR)
+	if (!proximity_check())
 		return
 
 	var/mob/living/user = activator
-	if (veil_thickness >= CULT_ACT_II)
+
+	if (veil_thickness < CULT_ACT_III && user.z != map.zMainStation)
+		abort(RITUALABORT_OUTPOST)
+		return FALSE
+
+	if (veil_thickness == CULT_ACT_I)
+		var/spawnchoice = alert(user,"As the veil is getting thinner, new possibilities arise.","[name]","Altar","Spire")
+		if (spawnchoice == "Spire")
+			spawntype = /obj/structure/cult/spire
+
+	else if (veil_thickness >= CULT_ACT_II)
 		var/spawnchoice = alert(user,"As the veil is getting thinner, new possibilities arise.","[name]","Altar","Forge","Spire")
 		switch (spawnchoice)
 			if ("Forge")
@@ -343,7 +368,9 @@
 				remaining_cost = 0
 
 
-		if (accumulated_blood >= remaining_cost)
+		if (accumulated_blood >= remaining_cost )
+			if (!proximity_check())
+				return
 			success()
 			return
 
@@ -393,7 +420,8 @@
 	var/datum/faction/bloodcult = find_active_faction_by_member(activator.mind.GetRole(CULTIST))
 	for(var/datum/role/cultist/C in bloodcult.members)
 		var/datum/mind/M = C.antag
-		to_chat(M.current, "<span class='game say'><b>[activator.real_name]</b>'s voice echoes in your head, <B><span class='sinister'>[message]</span></B></span>")
+		if (M.GetRole(CULTIST))//failsafe for cultist brains put in MMIs
+			to_chat(M.current, "<span class='game say'><b>[activator.real_name]</b>'s voice echoes in your head, <B><span class='sinister'>[message]</span></B></span>")
 
 	for(var/mob/dead/observer/O in player_list)
 		to_chat(O, "<span class='game say'><b>[activator.real_name]</b> communicates, <span class='sinister'>[message]</span></span>")
@@ -451,7 +479,8 @@
 			var/datum/mind/M = C.antag
 			if (M.current == speech.speaker)//echoes are annoying
 				continue
-			to_chat(M.current, "<span class='game say'><b>[speaker_name]</b>'s voice echoes in your head, <B><span class='sinister'>[speech.message]</span></B></span>")
+			if (M.GetRole(CULTIST))//failsafe for cultist brains put in MMIs
+				to_chat(M.current, "<span class='game say'><b>[speaker_name]</b>'s voice echoes in your head, <B><span class='sinister'>[speech.message]</span></B></span>")
 		for(var/mob/dead/observer/O in player_list)
 			to_chat(O, "<span class='game say'><b>[speaker_name]</b> communicates, <span class='sinister'>[speech.message]</span></span>")
 		log_cultspeak("[key_name(speech.speaker)] Cult Communicate Rune: [rendered_message]")
@@ -681,7 +710,7 @@
 	var/remaining = 100
 	var/mob/living/carbon/victim = null
 	var/flavor_text = 0
-	var/success = 0
+	var/success = CONVERSION_NOCHOICE
 	var/list/impede_medium = list(
 		"Security Officer",
 		"Warden",
@@ -714,6 +743,8 @@
 
 /datum/rune_spell/conversion/cast()
 	var/obj/effect/rune/R = spell_holder
+	var/mob/converter = activator//trying to fix logs showing the converter as *null*
+
 	R.one_pulse()
 	var/turf/T = R.loc
 	var/list/targets = list()
@@ -746,9 +777,8 @@
 	flick("rune_convert_start",conversion)
 	playsound(R, 'sound/effects/convert_start.ogg', 75, 0, -4)
 
-	var/obj/item/device/gps/secure/SPS = locate() in victim
-	if (SPS)//Think carefully before converting a sec officer
-		SPS.OnMobDeath(victim)
+	for(var/obj/item/device/gps/secure/SPS in get_contents_in_object(victim))
+		SPS.OnMobDeath(victim)//Think carefully before converting a sec officer
 
 	if (victim.mind)
 		if (victim.mind.assigned_role in impede_medium)
@@ -844,8 +874,8 @@
 		victim.Stun(15)
 
 		if (victim.client && victim.mind.assigned_role != "Chaplain")//Chaplains can never be converted
-			acceptance = get_role_desire_str(victim.client.prefs.roles[ROLE_CULTIST])
-		if (jobban_isbanned(victim, ROLE_CULTIST))
+			acceptance = get_role_desire_str(victim.client.prefs.roles[CULTIST])
+		if (jobban_isbanned(victim, CULTIST) || isantagbanned(victim))
 			acceptance = "Banned"
 
 		//Players with cult enabled in their preferences will always get converted.
@@ -855,24 +885,24 @@
 				conversion.icon_state = "rune_convert_good"
 				to_chat(activator, "<span class='sinister'>\The [victim] effortlessly opens himself to the teachings of Nar-Sie. They will undoubtedly become one of us when the ritual concludes.</span>")
 				to_chat(victim, "<span class='sinister'>Your begin hearing strange words, straight into your mind. Somehow you think you can understand their meaning. A sense of dread and fascination comes over you.</span>")
-				success = 1
+				success = CONVERSION_ACCEPT
 			if ("No","???")
 				to_chat(activator, "<span class='sinister'>The ritual arrives in its final phase. How it ends depends now of \the [victim].</span>")
 				spawn()
 					if (alert(victim, "You feel the gaze of an alien entity, it speaks into your mind. It has much to share with you, but time is of the essence. Will you open your mind to it? Or will you become its sustenance? Decide now!","You have 10 seconds","Join the Cult","Be Devoured") == "Join the Cult")
 						conversion.icon_state = "rune_convert_good"
-						success = 1
+						success = CONVERSION_ACCEPT
 						to_chat(victim, "<span class='sinister'>As you let the strange words into your mind, you find yourself suddenly understanding their meaning. A sense of dread and fascination comes over you.</span>")
 					else
 						conversion.icon_state = "rune_convert_bad"
 						to_chat(victim, "<span class='danger'>You won't let it have its way with you! Better die now as a human, than serve them.</span>")
-						success = -1
+						success = CONVERSION_REFUSE
 
 			if ("Never","Banned")
 				conversion.icon_state = "rune_convert_bad"
 				to_chat(activator, "<span class='sinister'>\The [victim]'s mind appears to be completely impervious to the Geometer of Blood's words of power. If they won't become one of us, they won't need their body any longer.</span>")
 				to_chat(victim, "<span class='danger'>A sense of dread comes over you, as you feel under the gaze of a cosmic being. You cannot hear its voice, but you can feel its thirst...for your blood!</span>")
-				success = -1
+				success = CONVERSION_REFUSE
 				if(victim.mind && victim.mind.assigned_role == "Chaplain")
 					var/list/cult_blood_chaplain = list("cult", "narsie", "nar'sie", "narnar", "nar-sie")
 					var/list/cult_clock_chaplain = list("ratvar", "clockwork", "ratvarism")
@@ -903,13 +933,14 @@
 		if (victim.mind)
 			var/datum/faction/bloodcult/cult = find_active_faction_by_type(/datum/faction/bloodcult)
 			if (cult)
-				cult.progress(CULT_ACT_II)
+				spawn(5)//waiting half a second to make sure that the sacrifice objective won't designate a victim that just refused conversion
+					cult.progress(CULT_ACT_II)
 			else
 				message_admins("Blood Cult: A conversion ritual occured...but we cannot find the cult faction...")//failsafe in case of admin varedit fuckery
 			cult_risk(activator)//risk of exposing the cult early if too many conversions
 
 		switch (success)
-			if (1)
+			if (CONVERSION_ACCEPT)
 				conversion.layer = BELOW_OBJ_LAYER
 				conversion.plane = OBJ_PLANE
 				victim.clear_fullscreen("conversionred", 10)
@@ -928,10 +959,12 @@
 				conversion.icon_state = ""
 				flick("rune_convert_success",conversion)
 				abort(RITUALABORT_CONVERT)
+				message_admins("BLOODCULT: [key_name(victim)] has been converted by [key_name(converter)].")
+				log_admin("BLOODCULT: [key_name(victim)] has been converted by [key_name(converter)].")
 				return
-			if (0)
+			if (CONVERSION_NOCHOICE)
 				to_chat(victim, "<span class='danger'>As you stood there, unable to make a choice for yourself, the Geometer of Blood ran out of patience and chose for you.</span>")
-			if (-1)
+			if (CONVERSION_REFUSE)
 				to_chat(victim, "<span class='danger'>Your mind was impervious to the teachings of Nar-Sie. Being of no use for the cult, your body was be devoured when the ritual ended. Your blood and equipment now belong to the cult.</span>")
 				switch(acceptance)
 					if ("Never")
@@ -939,7 +972,9 @@
 					if ("Banned")
 						to_chat(victim, "The conversion automatically failed due to your account being banned from the cultist role.")
 
-
+		message_admins("BLOODCULT: [key_name(victim)] refused conversion by [key_name(converter)], and died.")
+		log_admin("BLOODCULT: [key_name(victim)] refused conversion by [key_name(converter)], and died.")
+		to_chat(converter, "<span class='sinister'>\The [victim] was pulled through the veil, their body was devoured by Nar-Sie and their possession stored inside this coffer.</span>")
 
 		playsound(R, 'sound/effects/convert_failure.ogg', 75, 0, -4)
 		conversion.icon_state = ""
@@ -952,10 +987,13 @@
 			victim.take_blood(cup, cup.volume)//Up to 60u
 			cup.on_reagent_change()//so we get the reagentsfillings overlay
 			new/obj/item/weapon/skull(coffer)
+			to_chat(converter, "<span class='sinister'>Inside you may also find a cup filled with a portion of the blood left in their body, along with their skull to potentially use in a resurrection ritual.</span>")
 		if (isslime(victim))
 			cup.reagents.add_reagent(SLIMEJELLY, 50)
+			to_chat(converter, "<span class='sinister'>Inside you may also find a cup filled with a slimy substance.</span>")
 		if (isalien(victim))//w/e
 			cup.reagents.add_reagent(RADIUM, 50)
+			to_chat(converter, "<span class='sinister'>Inside you may also find a cup filled with a green radioactive liquid.</span>")
 
 		for(var/obj/item/weapon/implant/loyalty/I in victim)
 			I.implanted = 0
@@ -1026,6 +1064,10 @@
 
 
 /datum/rune_spell/stun/pre_cast()
+	if (Act_restriction > veil_thickness)
+		to_chat(activator, "<span class='danger'>The veil is still too thick for you to draw power from this rune.</span>")
+		return
+
 	var/mob/living/user = activator
 
 	if (istype (spell_holder,/obj/effect/rune))
@@ -1068,8 +1110,12 @@
 		if (!(M_HULK in C.mutations))
 			to_chat(M, "<span class='danger'>You find yourself unable to say a word.</span>")
 			C.Silent(15)
-		C.Knockdown(25)
-		C.Stun(25)
+		C.Knockdown(15)//used to be 25
+		C.Stun(15)//used to be 25
+
+	if (!(locate(/obj/effect/stun_indicator) in M))
+		new /obj/effect/stun_indicator(M)
+
 	qdel(src)
 
 /obj/effect/cult_ritual/stun
@@ -1606,9 +1652,11 @@ var/list/blind_victims = list()
 
 	var/obj/item/weapon/blood_tesseract/BT = new(get_turf(activator))
 	if (istype (spell_holder,/obj/item/weapon/talisman))
+		var/obj/item/weapon/talisman/T = spell_holder
 		activator.u_equip(spell_holder)
-		spell_holder.forceMove(BT)
-		BT.remaining = spell_holder
+		if (T.uses > 1)
+			BT.remaining = spell_holder
+			spell_holder.forceMove(BT)
 
 	for(var/slot in slots_to_store)
 		var/obj/item/user_slot = activator.get_item_by_slot(slot)
@@ -2025,6 +2073,12 @@ var/list/blind_victims = list()
 
 	to_chat(activator, "<span class='notice'>This rune will now let you travel through the \"[network]\" Path.</span>")
 
+	if (HOLOMAP_MARKER_CULT_RUNE+"_\ref[spell_holder]" in holomap_markers)
+		var/datum/holomap_marker/holomarker = holomap_markers[HOLOMAP_MARKER_CULT_RUNE+"_\ref[spell_holder]"]
+		holomarker.id = HOLOMAP_MARKER_CULT_ENTRANCE
+		holomarker.color = W.color
+		holomap_markers[HOLOMAP_MARKER_CULT_RUNE+"_\ref[spell_holder]"] = holomarker
+
 	talisman_absorb = RUNE_CAN_ATTUNE//once the network has been set, talismans will attune instead of imbue
 
 /datum/rune_spell/portalentrance/midcast(var/mob/add_cultist)
@@ -2130,6 +2184,12 @@ var/list/bloodcult_exitportals = list()
 	spell_holder.icon = initial(spell_holder.icon)
 
 	to_chat(activator, "<span class='notice'>This rune will now serve as a destination for the \"[network]\" Path.</span>")
+
+	if (HOLOMAP_MARKER_CULT_RUNE+"_\ref[spell_holder]" in holomap_markers)
+		var/datum/holomap_marker/holomarker = holomap_markers[HOLOMAP_MARKER_CULT_RUNE+"_\ref[spell_holder]"]
+		holomarker.id = HOLOMAP_MARKER_CULT_EXIT
+		holomarker.color = W.color
+		holomap_markers[HOLOMAP_MARKER_CULT_RUNE+"_\ref[spell_holder]"] = holomarker
 
 	talisman_absorb = RUNE_CAN_ATTUNE//once the network has been set, talismans will attune instead of imbue
 
