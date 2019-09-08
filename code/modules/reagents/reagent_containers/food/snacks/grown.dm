@@ -15,12 +15,13 @@ var/list/special_fruits = list()
 	var/datum/seed/seed
 	var/fragrance
 	icon = 'icons/obj/harvest.dmi'
-	New(newloc, newpotency)
-		if(!isnull(newpotency))
-			potency = newpotency
-		..()
-		src.pixel_x = rand(-5, 5) * PIXEL_MULTIPLIER
-		src.pixel_y = rand(-5, 5) * PIXEL_MULTIPLIER
+
+/obj/item/weapon/reagent_containers/food/snacks/grown/New(newloc, newpotency)
+	if(!isnull(newpotency))
+		potency = newpotency
+	..()
+	src.pixel_x = rand(-5, 5) * PIXEL_MULTIPLIER
+	src.pixel_y = rand(-5, 5) * PIXEL_MULTIPLIER
 
 /proc/get_special_fruits(var/filter=HYDRO_PREHISTORIC|HYDRO_VOX)
 	. = list()
@@ -137,6 +138,7 @@ var/list/special_fruits = list()
 						to_chat(H, "<span class='danger'>You step on \the [src]'s sharp thorns!</span>")
 						if(H.feels_pain())
 							H.Knockdown(3)
+							H.Stun(3)
 					if(stinging_apply_reagents(M))
 						to_chat(H, "<span class='danger'>You step on \the [src]'s stingers!</span>")
 						potency -= rand(1,(potency/3)+1)
@@ -268,6 +270,7 @@ var/list/special_fruits = list()
 	potency = 40
 	filling_color = "#FFEE00"
 	trash = /obj/item/weapon/corncob
+	fragrance = INCENSE_CORNOIL
 
 /obj/item/weapon/reagent_containers/food/snacks/grown/cherries
 	name = "cherries"
@@ -537,7 +540,7 @@ var/list/special_fruits = list()
 
 /obj/item/weapon/reagent_containers/food/snacks/grown/orange
 	name = "orange"
-	desc = "It's an tangy fruit."
+	desc = "It's a tangy fruit."
 	icon_state = "orange"
 	potency = 20
 	filling_color = "#FAAD28"
@@ -562,6 +565,9 @@ var/list/special_fruits = list()
 	plantname = "banana"
 	fragrance = INCENSE_BANANA
 
+/obj/item/weapon/reagent_containers/food/snacks/grown/banana/isHandgun()
+	return TRUE
+
 /obj/item/weapon/reagent_containers/food/snacks/grown/bluespacebanana
 	name = "bluespace banana"
 	desc = "It's an excellent prop for a comedy."
@@ -570,6 +576,9 @@ var/list/special_fruits = list()
 	item_state = "bluespacebanana"
 	filling_color = "#FCF695"
 	plantname = "bluespacebanana"
+
+/obj/item/weapon/reagent_containers/food/snacks/grown/bluespacebanana/isHandgun()
+	return TRUE
 
 /obj/item/weapon/reagent_containers/food/snacks/grown/bluespacebanana/after_consume(var/mob/user, var/datum/reagents/reagentreference)
 	var/obj/item/weapon/bananapeel/bluespace/peel = new
@@ -683,8 +692,8 @@ var/list/special_fruits = list()
 	plantname = "kudzu"
 
 /obj/item/weapon/reagent_containers/food/snacks/grown/icepepper
-	name = "ice-pepper"
-	desc = "It's a mutant strain of chili"
+	name = "chilly pepper"
+	desc = "It's a mutant strain of chili pepper, now cold rather than hot."
 	icon_state = "icepepper"
 	potency = 20
 	filling_color = "#66CEED"
@@ -692,7 +701,7 @@ var/list/special_fruits = list()
 
 /obj/item/weapon/reagent_containers/food/snacks/grown/ghostpepper
 	name = "ghost pepper"
-	desc = "This pepper is hainted. And pretty spicy, too."
+	desc = "This pepper is haunted. And pretty spicy, too."
 	icon_state = "ghostpepper"
 	potency = 20
 	filling_color = "#66CEED"
@@ -902,6 +911,7 @@ var/list/special_fruits = list()
 		if(C.CheckSlip() != TRUE)
 			continue
 		C.Knockdown(5)
+		C.Stun(5)
 	playsound(src, 'sound/effects/bang.ogg', 10, 1)
 	qdel(src)
 

@@ -28,7 +28,7 @@
 	attack_verb = list("attacks", "stabs", "pokes")
 	shrapnel_amount = 1
 	shrapnel_size = 2
-	shrapnel_type = "/obj/item/projectile/bullet/shrapnel"
+	shrapnel_type = /obj/item/projectile/bullet/shrapnel
 
 /obj/item/weapon/kitchen/utensil/New()
 	. = ..()
@@ -109,6 +109,14 @@
 
 /obj/item/weapon/kitchen/utensil/fork/proc/load_food(obj/item/weapon/reagent_containers/food/snacks/snack, mob/user)
 	if(!snack || !user || !istype(snack) || !istype(user))
+		return
+
+	if(!snack.edible_by_utensil)
+		to_chat(user, "<span class='notice'>It wouldn't make sense to put \the [snack.name] on a fork.</span>")
+		return
+
+	if(snack.food_flags & FOOD_LIQUID)
+		to_chat(user, "<span class='notice'>You can't eat that with a fork.</span>")
 		return
 
 	if(loaded_food)
@@ -286,6 +294,7 @@
 	name = "meat cleaver"
 	icon_state = "mcleaver"
 	desc = "A huge thing used for chopping and chopping up meat. This includes clowns and clown-by-products."
+	armor_penetration = 50
 	force = 25.0
 	throwforce = 15.0
 
@@ -353,7 +362,7 @@
 	else
 		M.LAssailant = user
 
-	var/t = user:zone_sel.selecting
+	var/t = user.zone_sel.selecting
 	if (t == LIMB_HEAD)
 		if(ishuman(M))
 			var/mob/living/carbon/human/H = M
@@ -414,6 +423,7 @@
 	if(clumsy_check(user) && prob(50))              //What if he's a clown?
 		to_chat(M, "<span class='warning'>You accidentally slam yourself with the [src]!</span>")
 		M.Knockdown(1)
+		M.Stun(1)
 		user.take_organ_damage(2)
 		if(prob(50))
 			playsound(M, 'sound/items/trayhit1.ogg', 50, 1)
@@ -443,6 +453,7 @@
 
 		if(prob(15))
 			M.Knockdown(3)
+			M.Stun(3)
 			M.take_organ_damage(3)
 		else
 			M.take_organ_damage(5)
@@ -514,6 +525,7 @@
 			M.take_organ_damage(8)
 			if(prob(30))
 				M.Knockdown(2)
+				M.Stun(2)
 				return
 			return
 /*

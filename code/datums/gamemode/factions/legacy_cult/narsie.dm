@@ -17,6 +17,7 @@ var/global/list/narsie_list = list()
 	dissipate = 0 // Do we lose energy over time?
 	grav_pull = 10 //How many tiles out do we pull?
 	consume_range = 3 //How many tiles out do we eat
+	var/wounded = FALSE
 
 
 /obj/machinery/singularity/narsie/New()
@@ -194,7 +195,6 @@ var/global/list/narsie_list = list()
 				return 0
 
 			M.cultify()
-			stat_collection.cult_narsie_corpses_fed++
 
 	//ITEM PROCESSING
 		else if (istype(A, /obj/))

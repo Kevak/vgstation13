@@ -11,7 +11,7 @@
 									//if excavation hits var/excavation_required exactly, it's contained find is extracted cleanly without the ore
 	var/prob_delicate = 90			//probability it requires an active suspension field to not insta-crumble
 	var/dissonance_spread = 1		//proportion of the tile that is affected by this find
-	var/responsive_reagent
+	var/responsive_reagent = PLASMA
 	var/apply_material_decorations = FALSE
 	var/apply_image_decorations = FALSE
 	var/material_descriptor = ""
@@ -112,7 +112,7 @@
 	item_type = "bowl"
 
 /datum/find/bowl/spawn_item()
-	var/glass_type = pick(200;/obj/item/weapon/reagent_containers/glass, 25;/obj/item/weapon/reagent_containers/glass/replenishing)
+	var/glass_type = pick(200;/obj/item/weapon/reagent_containers/glass, 25;/obj/item/weapon/reagent_containers/glass/replenishing, 25;/obj/item/weapon/reagent_containers/glass/xenoviral)
 	var/obj/item/weapon/new_item = new glass_type
 	new_item.icon_state = "bowl"
 	new_item.icon = 'icons/obj/xenoarchaeology.dmi'
@@ -132,7 +132,7 @@
 	anomaly_factor = 0
 
 /datum/find/urn/spawn_item()
-	var/glass_type = pick(200;/obj/item/weapon/reagent_containers/glass, 25;/obj/item/weapon/reagent_containers/glass/replenishing)
+	var/glass_type = pick(200;/obj/item/weapon/reagent_containers/glass, 25;/obj/item/weapon/reagent_containers/glass/replenishing, 25;/obj/item/weapon/reagent_containers/glass/xenoviral)
 	var/obj/item/weapon/new_item = new glass_type
 	new_item.icon_state = "urn"
 	new_item.icon = 'icons/obj/xenoarchaeology.dmi'
@@ -503,6 +503,7 @@
 /datum/find/stock_parts //Tier 4 parts
 	find_ID = ARCHAEO_STOCKPARTS
 	apply_material_decorations = FALSE
+	responsive_reagent = IRON
 	anomaly_factor = 2
 
 /datum/find/stock_parts/spawn_item()
@@ -521,6 +522,7 @@
 	find_ID = ARCHAEO_KATANA
 	apply_prefix = FALSE
 	responsive_reagent = IRON
+	anomaly_factor = 0
 
 /datum/find/katana/spawn_item()
 	var/obj/item/weapon/new_item = new /obj/item/weapon/katana

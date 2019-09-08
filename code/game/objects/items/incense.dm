@@ -91,6 +91,11 @@
 	adjective = "craving-inducing"
 	color = "#ffccff"
 
+/obj/item/incense_stick/cornoil
+	fragrance = INCENSE_CORNOIL
+	adjective = "hunger-inducing"
+	color = "#361b11"
+
 /obj/item/incense_stick/examine(mob/user)
 	..()
 	to_chat(user, "\The [src] is [lit ? "":"un"]lit.")
@@ -184,9 +189,16 @@
 									var/mob/living/carbon/human/H = C
 									if(H.species && H.species.flags & NO_BREATHE)//can they breath?
 										continue
+									if(H.wear_mask && H.wear_mask.clothing_flags & BLOCK_GAS_SMOKE_EFFECT)
+										continue
+									if(H.glasses && H.glasses.clothing_flags & BLOCK_GAS_SMOKE_EFFECT)
+										continue
+									if(H.head && H.head.clothing_flags & BLOCK_GAS_SMOKE_EFFECT)
+										continue
 									if(H.internal)//are their internals off?
 										continue
 									potential_breathers += C
+
 					var/datum/reagent/incense/D = chemical_reagents_list[fragrance]
 					if(D)
 						D.OnDisperse(location)
@@ -304,6 +316,10 @@
 /obj/item/weapon/storage/fancy/incensebox/vale
 	fragrance = INCENSE_CRAVE
 
+/obj/item/weapon/storage/fancy/incensebox/cornoil
+	fragrance = INCENSE_CORNOIL
+
+
 /obj/item/weapon/storage/fancy/incensebox/New()
 	..()
 	if (empty)
@@ -326,6 +342,7 @@
 	new /obj/item/incense_stick/banana(src)
 	new /obj/item/incense_stick/cabbage(src)
 	new /obj/item/incense_stick/vale(src)
+	new /obj/item/incense_stick/cornoil(src)
 
 /obj/item/incense_oilbox
 	name = "incense oil container"
@@ -390,6 +407,10 @@
 /obj/item/incense_oilbox/vale
 	fragrance = INCENSE_CRAVE
 	adjective = "craving-inducing"
+
+/obj/item/incense_oilbox/cornoil
+	fragrance = INCENSE_CORNOIL
+	adjective = "hunger-inducing"
 
 /obj/item/incense_oilbox/attackby(var/obj/item/weapon/W, var/mob/user)
 	if (istype (W, /obj/item/incense_stick))

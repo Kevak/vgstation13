@@ -53,6 +53,8 @@
 	var/list/current_tethers
 	var/obj/shadow/shadow
 
+	var/ignore_blocking = 0
+
 /atom/movable/New()
 	. = ..()
 	if((flags & HEAR) && !ismob(src))
@@ -486,6 +488,11 @@
 		return 1
 	return 0
 
+//Called below in hit_check to see if it can be hit
+//Return TRUE if not hit.
+/atom/proc/PreImpact(atom/movable/A, speed)
+	return TRUE
+
 /atom/movable/proc/hit_check(var/speed, mob/user)
 	. = 1
 
@@ -494,21 +501,10 @@
 			if(A == src)
 				continue
 
-			if(isliving(A))
-				var/mob/living/L = A
-				if(L.lying)
-					continue
-				src.throw_impact(L, speed, user)
-
-				if(src.throwing == 1) //If throwing == 1, the throw was weak and will stop when it hits a dude. If a hulk throws this item, throwing is set to 2 (so the item will pass through multiple mobs)
-					src.throwing = 0
-					. = 0
-
-			else if(isobj(A))
-				var/obj/O = A
-				if(O.density && !O.throwpass)	// **TODO: Better behaviour for windows which are dense, but shouldn't always stop movement
-					src.throw_impact(O, speed, user)
-					src.throwing = 0
+			if(!A.PreImpact(src,speed))
+				throw_impact(A,speed,user)
+				if(throwing==1)
+					throwing = 0
 					. = 0
 
 /atom/movable/proc/throw_at(atom/target, range, speed, override = 1, var/fly_speed = 0) //fly_speed parameter: if 0, does nothing. Otherwise, changes how fast the object flies WITHOUT affecting damage!
@@ -1006,9 +1002,9 @@
 
 /atom/movable/proc/setPixelOffsetsFromParams(params, mob/user, base_pixx = 0, base_pixy = 0, clamp = TRUE)
 	if(anchored)
-		return
+		return 0
 	if(user && (!Adjacent(user) || !src.Adjacent(user) || user.incapacitated() || !src.can_be_pulled(user)))
-		return
+		return 0
 	var/list/params_list = params2list(params)
 	if(clamp)
 		pixel_x = Clamp(base_pixx + text2num(params_list["icon-x"]) - WORLD_ICON_SIZE/2, -WORLD_ICON_SIZE/2, WORLD_ICON_SIZE/2)
@@ -1016,6 +1012,7 @@
 	else
 		pixel_x = base_pixx + text2num(params_list["icon-x"]) - WORLD_ICON_SIZE/2
 		pixel_y = base_pixy + text2num(params_list["icon-y"]) - WORLD_ICON_SIZE/2
+	return 1
 
 //Overwriting BYOND proc used for simple animal and NPCbot movement, Pomf help me
 /atom/movable/proc/start_walk_to(Trg,Min=0,Lag=0,Speed=0)
@@ -1025,3 +1022,62 @@
 
 /atom/movable/proc/can_be_pushed(mob/user)
 	return 1
+
+/atom/movable/proc/ThrowAtStation(var/radius = 30, var/throwspeed = null, var/startside = null) //throws a thing at the station from the edges
+	var/startx = 0
+	var/starty = 0
+	var/endy = 0
+	var/endx = 0
+	if (!startside)
+		startside = pick(cardinal)
+
+	switch(startside)
+		if(NORTH)
+			starty = world.maxy-TRANSITIONEDGE-5
+			startx = rand(TRANSITIONEDGE+5,world.maxx-TRANSITIONEDGE-5)
+		if(EAST)
+			starty = rand(TRANSITIONEDGE+5,world.maxy-TRANSITIONEDGE-5)
+			startx = world.maxx-TRANSITIONEDGE-5
+		if(SOUTH)
+			starty = TRANSITIONEDGE+5
+			startx = rand(TRANSITIONEDGE+5,world.maxx-TRANSITIONEDGE-5)
+		if(WEST)
+			starty = rand(TRANSITIONEDGE+5,world.maxy-TRANSITIONEDGE-5)
+			startx = TRANSITIONEDGE+5
+
+	//grabs a turf in the center of the z-level
+	//range of turfs determined by radius var
+	endx = rand((world.maxx/2)-radius,(world.maxx/2)+radius)
+	endy = rand((world.maxy/2)-radius,(world.maxy/2)+radius)
+	var/turf/startzone = locate(startx, starty, 1)
+	var/turf/endzone = locate(endx, endy, 1)
+	if(!isspace(get_area(startzone)))
+		return FALSE
+	forceMove(startzone)
+	throw_at(endzone, null, throwspeed)
+	return TRUE
+
+/mob/living/carbon/human/ThrowAtStation(var/radius = 30, var/throwspeed = null, var/startside = null, var/entry_vehicle = /obj/item/airbag)
+	var/turf/prev_turf = get_turf(src)
+	var/obj/AB = new entry_vehicle(null, TRUE)
+	forceMove(AB)
+	if(AB.ThrowAtStation(radius, throwspeed, startside))
+		return TRUE
+	else
+		forceMove(prev_turf)
+		qdel(AB)
+		return FALSE
+
+/atom/movable/proc/spawn_rand_maintenance()
+	var/list/potential_locations = list()
+	for(var/area/maintenance/A in areas)
+		potential_locations.Add(A)
+
+	while(potential_locations.len)
+		var/area/maintenance/A = pick(potential_locations)
+		potential_locations.Remove(A)
+		for(var/turf/simulated/floor/F in A.contents)
+			if(!F.has_dense_content())
+				forceMove(F)
+				return TRUE
+	return FALSE

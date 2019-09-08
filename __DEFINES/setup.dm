@@ -5,9 +5,6 @@
 #define RUNWARNING // disable if they re-enable run() in 507 or newer.
                    // They did, tested in 508.1296 - N3X
 
-// If set to 0, replaces solo antags' objectives with an always-pass freeform
-#define SOLO_ANTAG_OBJECTIVES 1
-
 // Defines for the shuttle
 #define SHUTTLE_ON_STANDBY 0
 #define SHUTTLE_ON_STATION 1
@@ -305,22 +302,22 @@ var/MAX_EXPLOSION_RANGE = 14
 
 // bitflags for clothing parts
 
-#define FULL_TORSO		UPPER_TORSO|LOWER_TORSO
-#define FACE			EYES|MOUTH|BEARD
+#define FULL_TORSO		(UPPER_TORSO|LOWER_TORSO)
+#define FACE			(EYES|MOUTH|BEARD)
 #define BEARD			32768
-#define FULL_HEAD		HEAD|EYES|MOUTH|EARS
-#define LEGS			LEG_LEFT|LEG_RIGHT 		// 24
-#define FEET			FOOT_LEFT|FOOT_RIGHT 	//96
-#define ARMS			ARM_LEFT|ARM_RIGHT		//384
-#define HANDS			HAND_LEFT|HAND_RIGHT //1536
-#define FULL_BODY		FULL_HEAD|HANDS|FULL_TORSO|ARMS|FEET|LEGS
+#define FULL_HEAD		(HEAD|EYES|MOUTH|EARS)
+#define LEGS			(LEG_LEFT|LEG_RIGHT) 		// 24
+#define FEET			(FOOT_LEFT|FOOT_RIGHT) 	//96
+#define ARMS			(ARM_LEFT|ARM_RIGHT)		//384
+#define HANDS			(HAND_LEFT|HAND_RIGHT) //1536
+#define FULL_BODY		(FULL_HEAD|HANDS|FULL_TORSO|ARMS|FEET|LEGS)
 #define IGNORE_INV		16384 // Don't make stuff invisible
 
 
 // bitflags for invisibility
 
 #define HIDEGLOVES			HANDS
-#define HIDEJUMPSUIT		ARMS|LEGS|FULL_TORSO
+#define HIDEJUMPSUIT		(ARMS|LEGS|FULL_TORSO)
 #define HIDESHOES			FEET
 #define HIDEMASK			FACE
 #define HIDEEARS			EARS
@@ -328,7 +325,7 @@ var/MAX_EXPLOSION_RANGE = 14
 #define HIDEFACE			FACE
 #define HIDEHEADHAIR 		EARS|HEAD
 #define HIDEBEARDHAIR		BEARD
-#define HIDEHAIR			HIDEHEADHAIR|HIDEBEARDHAIR
+#define HIDEHAIR			(HIDEHEADHAIR|HIDEBEARDHAIR)
 #define	HIDESUITSTORAGE		LOWER_TORSO
 
 // bitflags for the percentual amount of protection a piece of clothing which covers the body part offers.
@@ -579,7 +576,7 @@ var/list/global_mutations = list() // list of hidden mutation things
 #define CANKNOCKDOWN	2
 #define CANPARALYSE	4
 #define CANPUSH		8
-#define PACIFIABLE 16		//Should a mob have this flag in their status_flags, they will be able to run is_pacified(), not all mobs call is_pacified however.
+#define UNPACIFIABLE 16		//Immune to pacify effects.
 #define GODMODE		4096
 #define FAKEDEATH	8192	//Replaces stuff like changeling.changeling_fakedeath
 #define XENO_HOST	32768	//Tracks whether we're gonna be a baby alien's mummy.
@@ -976,7 +973,40 @@ var/default_colour_matrix = list(1,0,0,0,\
 #define INFECTION_LEVEL_TWO 500
 #define INFECTION_LEVEL_THREE 1000
 
+//Diseases, Virus, Antigens
+#define	SPREAD_BLOOD	1//can be extracted from the carrier's blood, all diseases have this by default.
+#define	SPREAD_CONTACT	2//touching or bumping into someone may transmit the virus, virus can survive on items for a while. gloves lower the chance of transmission.
+#define	SPREAD_AIRBORNE	4//carrier mobs will periodically release invisible clouds that carry the virus to adjacent mobs that can breath it.
 
+#define EFFECT_DANGER_HELPFUL	"0"
+#define EFFECT_DANGER_FLAVOR	"1"
+#define EFFECT_DANGER_ANNOYING	"2"
+#define EFFECT_DANGER_HINDRANCE	"3"
+#define EFFECT_DANGER_HARMFUL	"4"
+#define EFFECT_DANGER_DEADLY	"5"
+
+#define	ANTIGEN_BLOOD	"blood"
+#define	ANTIGEN_COMMON	"common"
+#define	ANTIGEN_RARE	"rare"
+#define	ANTIGEN_ALIEN	"alien"
+
+//blood antigens
+#define	ANTIGEN_O	"O"
+#define	ANTIGEN_A	"A"
+#define	ANTIGEN_B	"B"
+#define	ANTIGEN_RH	"Rh"
+//common antigens
+#define	ANTIGEN_Q	"Q"
+#define	ANTIGEN_U	"U"
+#define	ANTIGEN_V	"V"
+//rare antigens
+#define	ANTIGEN_M	"M"
+#define	ANTIGEN_N	"N"
+#define	ANTIGEN_P	"P"
+//alien antigens
+#define	ANTIGEN_X	"X"
+#define	ANTIGEN_Y	"Y"
+#define	ANTIGEN_Z	"Z"
 
 //Language flags.
 #define WHITELISTED 1  // Language is available if the speaker is whitelisted.
@@ -1017,11 +1047,15 @@ var/default_colour_matrix = list(1,0,0,0,\
 #define VAMP_CAPE	  18
 #define STARTING_BLOOD 10
 
+#define VAMP_FAILURE -1
+
 // Moved from machine_interactions.dm
 #define STATION_Z  1
 #define CENTCOMM_Z 2
 #define TELECOMM_Z 3
+#define DERELICT_Z 4
 #define ASTEROID_Z 5
+#define SPACEPIRATE_Z 6
 
 // canGhost(Read|Write) flags
 #define PERMIT_ALL 1
@@ -1165,7 +1199,8 @@ var/default_colour_matrix = list(1,0,0,0,\
 #define DELAY_MOVE    1
 #define DELAY_ATTACK  2
 #define DELAY_SPECIAL 4
-#define DELAY_ALL (DELAY_MOVE|DELAY_ATTACK|DELAY_SPECIAL)
+#define DELAY_THROW 8
+#define DELAY_ALL (DELAY_MOVE|DELAY_ATTACK|DELAY_SPECIAL|DELAY_THROW)
 
 //singularity defines
 #define STAGE_ONE 	1
@@ -1293,12 +1328,14 @@ var/proccalls = 1
 #define ORE_PROCESSING_ALLOY 2
 
 //SOUND CHANNELS
+#define CHANNEL_WEATHER				1018
 #define CHANNEL_MEDBOTS				1019
 #define CHANNEL_BALLOON				1020
 #define CHANNEL_GRUE				1021	//only ever used to allow the ambient grue sound to be made to stop playing
 #define CHANNEL_LOBBY				1022
 #define CHANNEL_AMBIENCE			1023
 #define CHANNEL_ADMINMUSIC			1024
+#define CHANNEL_STARMAN				1025
 
 //incorporeal_move values
 #define INCORPOREAL_DEACTIVATE	0
@@ -1392,6 +1429,7 @@ var/proccalls = 1
 #define MODE_CULTCHAT "cultchat"
 #define MODE_ANCIENT "ancientchat"
 #define MODE_MUSHROOM "sporechat"
+#define MODE_BORER "borerchat"
 
 //Hardcore mode stuff
 
@@ -1467,7 +1505,6 @@ var/proccalls = 1
 #define EVENT_OBJECT_INDEX "o"
 #define EVENT_PROC_INDEX "p"
 
-#define HIGHLANDER "highlander"
 #define BOMBERMAN "bomberman"
 
 // /proc/is_honorable() flags.
@@ -1527,6 +1564,9 @@ var/proccalls = 1
 #define HOLOMAP_MARKER_CULT_EXIT		"path_exit"
 #define HOLOMAP_MARKER_CULT_RUNE		"rune"
 
+#define HOLOMAP_DRAW_NORMAL	0
+#define HOLOMAP_DRAW_FULL	1
+#define HOLOMAP_DRAW_EMPTY	2
 
 #define DEFAULT_BLOOD "#A10808"
 #define DEFAULT_FLESH "#FFC896"
@@ -1588,11 +1628,6 @@ var/proccalls = 1
 #define COMPUTER "computer"
 #define EMBEDDED_CONTROLLER "embedded controller"
 #define OTHER "other"
-
-//used in /datum/preferences/var/alternate_option
-#define GET_RANDOM_JOB 0
-#define BE_ASSISTANT 1
-#define RETURN_TO_LOBBY 2
 
 // How many times to retry winset()ing window parameters before giving up
 #define WINSET_MAX_ATTEMPTS 10

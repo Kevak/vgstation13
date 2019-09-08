@@ -1,5 +1,6 @@
 /obj/item/clothing
 	name = "clothing"
+	sterility = 5
 	var/list/species_restricted = null //Only these species can wear this kit.
 	var/wizard_garb = 0 // Wearing this empowers a wizard.
 	var/eyeprot = 0 //for head and eyewear
@@ -19,7 +20,11 @@
 		accessories.Remove(A)
 		qdel(A)
 	..()
-
+	
+/obj/item/clothing/CtrlClick(var/mob/user)
+	if(isliving(user) && !user.incapacitated() && user.Adjacent(src) && accessories.len)
+		removeaccessory()
+	
 /obj/item/clothing/examine(mob/user)
 	..()
 	for(var/obj/item/clothing/accessory/A in accessories)
@@ -47,6 +52,10 @@
 			var/mob/living/carbon/human/H = loc
 			H.update_inv_by_slot(slot_flags)
 		return 1
+	if(I.is_screwdriver(user))
+		for(var/obj/item/clothing/accessory/accessory in priority_accessories())
+			if(accessory.attackby(I, user))
+				return 1
 	for(var/obj/item/clothing/accessory/accessory in priority_accessories())
 		if(accessory.attackby(I, user))
 			return 1
@@ -64,9 +73,15 @@
 					delayed.Add(A)
 				else
 					continue
+		var/ignorecounter = 0
 		for(var/obj/item/clothing/accessory/A in delayed)
-			if(A.on_accessory_interact(user, 1))
+			//if(A.ignoreinteract)
+				//ignorecounter += 1
+			ignorecounter += A.ignoreinteract
+			if(!(A.ignoreinteract) && A.on_accessory_interact(user, 1))
 				return 1
+		if(ignorecounter == accessories.len)
+			return ..()
 		return
 	return ..()
 
@@ -147,10 +162,15 @@
 
 //BS12: Species-restricted clothing check.
 /obj/item/clothing/mob_can_equip(mob/M, slot, disable_warning = 0, automatic = 0)
-
 	. = ..() //Default return value. If 1, item can be equipped. If 0, it can't be.
 	if(!.)
 		return //Default return value is 0 - don't check for species
+
+	switch(role_check(M))
+		if(FALSE)
+			return CANNOT_EQUIP
+		if(ALWAYSTRUE)
+			return CAN_EQUIP
 
 	if(species_restricted && istype(M,/mob/living/carbon/human) && (slot != slot_l_store && slot != slot_r_store))
 
@@ -205,6 +225,19 @@
 			return CANNOT_EQUIP
 
 	//return ..()
+
+/obj/item/clothing/proc/role_check(mob/user)
+	if(!user || !user.mind || !user.mind.antag_roles.len)
+		return TRUE //No roles to check
+	for(var/datum/role/R in get_list_of_elements(user.mind.antag_roles))
+		switch(R.can_wear(src))
+			if(ALWAYSTRUE)
+				return ALWAYSTRUE
+			if(FALSE)
+				return FALSE
+			if(TRUE)
+				continue
+	return TRUE //All roles true? Return true.
 
 /obj/item/clothing/before_stripped(mob/wearer as mob, mob/stripper as mob, slot)
 	..()
@@ -286,6 +319,7 @@
 	icon = 'icons/obj/clothing/gloves.dmi'
 	inhand_states = list("left_hand" = 'icons/mob/in-hand/left/gloves.dmi', "right_hand" = 'icons/mob/in-hand/right/gloves.dmi')
 	siemens_coefficient = 0.50
+	sterility = 50
 	var/wired = 0
 	var/obj/item/weapon/cell/cell = 0
 	var/clipped = 0
@@ -406,9 +440,6 @@
 /obj/item/clothing/mask/attack_self()
 	togglemask()
 
-/obj/item/clothing/mask/proc/treat_mask_speech(var/datum/speech/speech)
-	return
-
 //Shoes
 /obj/item/clothing/shoes
 	name = "shoes"
@@ -420,12 +451,14 @@
 	var/chaintype = null // Type of chain.
 	var/bonus_kick_damage = 0
 	var/footprint_type = /obj/effect/decal/cleanable/blood/tracks/footprints //The type of footprint left by someone wearing these
+	var/mag_slow = MAGBOOTS_SLOWDOWN_HIGH //how slow are they when the magpulse is on?
 
 	siemens_coefficient = 0.9
 	body_parts_covered = FEET
 	slot_flags = SLOT_FEET
 	heat_conductivity = SHOE_HEAT_CONDUCTIVITY
 	permeability_coefficient = 0.50
+	sterility = 50
 
 	species_restricted = list("exclude","Unathi","Tajaran","Muton")
 	var/step_sound = ""
@@ -449,6 +482,19 @@
 	. = ..()
 	track_blood = 0
 
+/obj/item/clothing/shoes/proc/togglemagpulse(var/mob/user = usr, var/override = FALSE)
+	if(!override)
+		if(user.isUnconscious())
+			return
+	if((clothing_flags & MAGPULSE))
+		clothing_flags &= ~(NOSLIP | MAGPULSE)
+		slowdown = NO_SLOWDOWN
+		return 0
+	else
+		clothing_flags |= (NOSLIP | MAGPULSE)
+		slowdown = mag_slow
+		return 1
+
 //Suit
 /obj/item/clothing/suit
 	icon = 'icons/obj/clothing/suits.dmi'
@@ -464,10 +510,11 @@
 	species_restricted = list("exclude","Muton")
 	siemens_coefficient = 0.9
 	clothing_flags = CANEXTINGUISH
+	sterility = 30
 
 //Spacesuit
 //Note: Everything in modules/clothing/spacesuits should have the entire suit grouped together.
-//      Meaning the the suit is defined directly after the corrisponding helmet. Just like below!
+//      Meaning the the suit is defined directly after the corresponding helmet. Just like below!
 /obj/item/clothing/head/helmet/space
 	name = "Space helmet"
 	icon_state = "space"
@@ -484,6 +531,7 @@
 	species_restricted = list("exclude","Diona","Muton")
 	eyeprot = 1
 	cold_breath_protection = 230
+	sterility = 100
 
 /obj/item/clothing/suit/space
 	name = "Space suit"
@@ -504,6 +552,7 @@
 	species_restricted = list("exclude","Diona","Muton")
 	heat_conductivity = SPACESUIT_HEAT_CONDUCTIVITY
 	clothing_flags = CANEXTINGUISH
+	sterility = 100
 
 //Under clothing
 /obj/item/clothing/under
@@ -526,12 +575,6 @@
 	var/displays_id = 1
 	clothing_flags = CANEXTINGUISH
 
-/obj/item/clothing/under/Destroy()
-	for(var/obj/machinery/computer/crew/C in machines)
-		if(C && src in C.tracked)
-			C.tracked -= src
-	..()
-
 /obj/item/clothing/under/examine(mob/user)
 	..()
 	var/mode
@@ -546,6 +589,9 @@
 			mode = "Its vital tracker and tracking beacon appear to be enabled."
 	to_chat(user, "<span class='info'>" + mode + "</span>")
 
+/obj/item/clothing/under/emp_act(severity)
+	..()
+	sensor_mode = pick(0,1,2,3)
 
 /obj/item/clothing/under/proc/set_sensors(mob/user as mob)
 	if(user.incapacitated())
@@ -593,7 +639,6 @@
 	set category = "Object"
 	set src in usr
 	set_sensors(usr)
-	..()
 
 /obj/item/clothing/under/AltClick()
 	if(is_holder_of(usr, src))

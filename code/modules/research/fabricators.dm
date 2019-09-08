@@ -267,6 +267,27 @@
 						src.materials.addAmount(gib,bluespaceamount)
 	return remove_materials(part)
 
+//Returns however much of that material we have
+/obj/machinery/r_n_d/fabricator/proc/check_mats(var/material)
+	if(copytext(material,1,2) == "$")//It's iron/gold/glass
+		return materials.getAmount(material)
+	else
+		var/reagent_total = 0
+		for(var/obj/item/weapon/reagent_containers/RC in component_parts)
+			reagent_total += RC.reagents.get_reagent_amount(material)
+		return reagent_total
+
+//Returns however much of that material is in the bluespace network
+/obj/machinery/r_n_d/fabricator/proc/check_mats_bluespace(var/material)
+	if(!has_bluespace_bin()) //We can't access that
+		return 0
+
+	var/amount
+	for(var/obj/machinery/r_n_d/fabricator/gibmats in machines)
+		if(gibmats.has_bluespace_bin())
+			amount += gibmats.materials.getAmount(material)
+	return amount
+
 
 /obj/machinery/r_n_d/fabricator/proc/check_mat(var/datum/design/being_built, var/M)
 	if(copytext(M,1,2) == "$")
@@ -291,12 +312,12 @@
 		return
 	if(is_contraband(part) && !src.hacked)
 		stopped = 1
-		src.visible_message("<font color='blue'>The [src.name] buzzes, \"Safety procedures prevent current queued item from being built.\"</font>")
+		src.visible_message("<span class='notice'>The [src.name] buzzes, \"Safety procedures prevent current queued item from being built.\"</span>")
 		return
 
 	if(!remove_materials(part) && !bluespace_materials(part))
 		stopped = 1
-		src.visible_message("<font color='blue'>The [src.name] beeps, \"Not enough materials to complete item.\"</font>")
+		src.visible_message("<span class='notice'>The [src.name] beeps, \"Not enough materials to complete item.\"</span>")
 		return
 
 	src.being_built = new part.build_path(src)
@@ -365,7 +386,7 @@
 		//src.visible_message("[bicon(src)] <b>[src]</b> beeps: [part.name] was added to the queue\".")
 		//queue[++queue.len] = part
 		if(is_contraband(part) && !src.hacked)
-			src.visible_message("<font color='blue'>The [src.name] buzzes, \"Safety procedures prevent that item from being queued.\"</font>")
+			src.visible_message("<span class='notice'>The [src.name] buzzes, \"Safety procedures prevent that item from being queued.\"</span>")
 			return
 		queue.Add(part)
 	return queue.len

@@ -73,12 +73,15 @@
 		O.viruses += D
 		D.affected_mob = O
 		M.viruses -= D
+	O.virus2 = virus_copylist(M.virus2)
+	if (M.immune_system)
+		M.immune_system.transfer_to(O)
 
 	//for(var/obj/T in M)
 	//	del(T)
 
 	O.forceMove(M.loc)
-	Mo.transferBorers(O)
+	Mo.dropBorers() //safer to just drop these like I originally did
 	if(M.mind)
 		M.mind.transfer_to(O)	//transfer our mind to the human
 
@@ -100,8 +103,8 @@
 			O.real_name = randomname
 			i++
 	O.UpdateAppearance()
-	O.h_style = random_hair_style(O.gender,O.species.name)
-	O.f_style = random_facial_hair_style(O.gender,O.species.name)
+	O.my_appearance.h_style = random_hair_style(O.gender,O.species.name)
+	O.my_appearance.f_style = random_facial_hair_style(O.gender,O.species.name)
 	O.update_hair()
 	O.take_overall_damage(M.getBruteLoss(), M.getFireLoss())
 	O.adjustToxLoss(M.getToxLoss())

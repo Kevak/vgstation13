@@ -3,7 +3,7 @@
 /////////////////////////////////////////
 
 /obj/machinery/sleeper
-	name = "\improper Sleeper"
+	name = "sleeper"
 	icon = 'icons/obj/cryogenics3.dmi'
 	icon_state = "sleeper_0"
 	density = TRUE
@@ -473,6 +473,21 @@
 	updateUsrDialog()
 	return
 
+
+/obj/machinery/sleeper/upgraded
+	name = "advanced sleeper"
+	component_parts = newlist(
+		/obj/item/weapon/circuitboard/sleeper,
+		/obj/item/weapon/stock_parts/scanning_module/adv/phasic,
+		/obj/item/weapon/stock_parts/manipulator/nano/pico,
+		/obj/item/weapon/stock_parts/manipulator/nano/pico
+	)
+
+
+/////////////////////////////////////////
+// MANCROWAVE
+/////////////////////////////////////////
+
 /obj/machinery/sleeper/mancrowave
 	name = "thermal homeostasis regulator"
 	desc = "The new generation 'minicrowave' from Mancrowave Inc. It has the same satisfying ping as the classic."
@@ -641,10 +656,10 @@
 			if(ishuman(occupant))
 				var/mob/living/carbon/human/H = occupant
 				if(isdiona(H))
-					if(H.h_style != "Popped Hair")
+					if(H.my_appearance.h_style != "Popped Hair")
 						to_chat(H, "<span class = 'notice'>Your head pops!</span>")
 						playsound(src, 'sound/effects/pop.ogg', 50, 1)
-						H.h_style = "Popped Hair"
+						H.my_appearance.h_style = "Popped Hair"
 						H.update_hair()
 				else if(isjusthuman(H) && Holiday == APRIL_FOOLS_DAY)
 					H.GALize()

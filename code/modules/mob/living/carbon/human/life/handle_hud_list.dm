@@ -37,10 +37,16 @@
 			holder2.icon_state = "hudbrainworm"
 		else
 			holder.icon_state = "hudhealthy"
-			if(virus2.len)
-				holder2.icon_state = "hudill"
-			else
-				holder2.icon_state = "hudhealthy"
+			var/dangerosity = has_recorded_virus2(src)
+			switch (dangerosity)
+				if (1)
+					holder.icon_state = "hudill"
+				if (2)
+					holder.icon_state = "hudill_safe"
+				if (3)
+					holder.icon_state = "hudill_danger"
+				else
+					holder.icon_state = "hudhealthy"
 
 		hud_list[STATUS_HUD] = holder
 		hud_list[STATUS_HUD_OOC] = holder2
@@ -109,7 +115,7 @@
 		hud_list[IMPLOYAL_HUD] = holder2
 		hud_list[IMPCHEM_HUD] = holder3
 
-	if(hud_updateflag & 1 << SPECIALROLE_HUD)
+	/*if(hud_updateflag & 1 << SPECIALROLE_HUD)
 		var/image/holder = hud_list[SPECIALROLE_HUD]
 		holder.icon_state = "hudblank"
 
@@ -132,5 +138,5 @@
 				if("Vampire") // TODO: Check this
 					holder.icon_state = "hudvampire"
 
-			hud_list[SPECIALROLE_HUD] = holder
+			hud_list[SPECIALROLE_HUD] = holder*/
 	hud_updateflag = 0
